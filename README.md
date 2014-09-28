@@ -1,8 +1,6 @@
-myscluscon (MYsql CLUSter CONnector)
+myscluscon 
 ==========
-
 JDBC Driver for always connecting to valid server in your (Mysql) Galera or read-only slave cluster
-
 
 ## WORK IN PROGRESS, PROBABLY DOES NOT WORK YET..
 
@@ -12,7 +10,7 @@ JDBC Driver for always connecting to valid server in your (Mysql) Galera or read
 - Define servers in your cluster in jdbc url
 - Always connect to valid server in your cluster.
     - Either Galera node that returns WSREP_READY=ON
-    - Or read-only slave in normal mysql master-slave replication that has replication running and smaller than defined lag
+    - Or read-only slave in normal mysql master-slave replication that is valid (replication is running)
 - Connections to servers that do not pass validity check, return "false" for isValid(timeout) call.
     - Your favorite connection pool will notice this, and can then replace faulty connections with proper one, pointing to working server. 
 - Standardish JDBC API.
@@ -50,5 +48,6 @@ JDBC Driver for always connecting to valid server in your (Mysql) Galera or read
             
             DataSource dataSource = new HikariDataSource(hikarConfig);
             
-            dataSource.getConnectioon(); //Connection to serverOne, serverTwo or serverThree, which ever is valid or some if all are valid 
+            //Connection to serverOne, serverTwo or serverThree, which ever is valid or some if all are valid 
+            dataSource.getConnectioon(); 
             
