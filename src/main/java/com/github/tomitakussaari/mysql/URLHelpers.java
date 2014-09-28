@@ -7,7 +7,7 @@ import java.net.URLDecoder;
 import java.sql.SQLException;
 import java.util.*;
 
-public class URLHelpers {
+class URLHelpers {
 
     public static String constructMysqlConnectUrl(URL originalUrl, String host) {
         final String protocol = "jdbc:mysql";
@@ -25,7 +25,7 @@ public class URLHelpers {
     public static URL createConvertedUrl(String jdbcUrl) {
         try {
             //Hacky but it feels simpler than alternatives, as Java URL only supports certain protocols, so protocol is "changed" here to make URL work..
-            return new URL(jdbcUrl.replace(MysqlClusterConnectorDriver.galeraClusterConnectorName, "http").replace(MysqlClusterConnectorDriver.mysqlReadClusterConnectorName, "http"));
+            return new URL(jdbcUrl.replace(MysclusconDriver.galeraClusterConnectorName, "http").replace(MysclusconDriver.mysqlReadClusterConnectorName, "http"));
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }

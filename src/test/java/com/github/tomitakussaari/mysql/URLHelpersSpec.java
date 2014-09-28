@@ -27,12 +27,12 @@ public class URLHelpersSpec {
 
     @Test
     public void parsesSingleHostFromUrl() throws MalformedURLException {
-        assertEquals("[serverOne]", URLHelpers.getHosts("jdbc:tomitakussaari:mysql:read_cluster://serverOne/database").toString());
+        assertEquals("[serverOne]", URLHelpers.getHosts("jdbc:myscluscon:mysql:read_cluster://serverOne/database").toString());
     }
 
     @Test
     public void parsesMultipleHostsWithPortsFromUrl() throws MalformedURLException {
-        assertEquals("[serverOne, serverTwo, ServerThree]", URLHelpers.getHosts("jdbc:tomitakussaari:mysql:read_cluster://serverOne,serverTwo,ServerThree:2134/database").toString());
+        assertEquals("[serverOne, serverTwo, ServerThree]", URLHelpers.getHosts("jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,ServerThree:2134/database").toString());
     }
 
     @Test
