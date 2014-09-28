@@ -1,10 +1,10 @@
-myscluscon
+myscluscon (MYsql CLUSter CONnector)
 ==========
-MYsql CLUSter CONnector
+
 JDBC Driver for always connecting to valid server in your (Mysql) Galera or read-only slave cluster
 
 
-WORK IN PROGRESS, PROBABLY DOES NOT WORK YET.. Atleast correctly..
+## WORK IN PROGRESS, PROBABLY DOES NOT WORK YET..
 
 JDBC Driver for always connecting to valid server in your (Mysql) Galera or read-only slave cluster 
 
