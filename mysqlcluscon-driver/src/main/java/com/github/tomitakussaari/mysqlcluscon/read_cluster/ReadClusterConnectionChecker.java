@@ -1,7 +1,6 @@
 package com.github.tomitakussaari.mysqlcluscon.read_cluster;
 
 import com.github.tomitakussaari.mysqlcluscon.ConnectionChecker;
-import com.github.tomitakussaari.mysqlcluscon.DebugLogger;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -10,7 +9,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public class ReadClusterConnectionChecker implements ConnectionChecker {
 
@@ -38,18 +36,9 @@ public class ReadClusterConnectionChecker implements ConnectionChecker {
     private boolean slaveIsRunning(final Statement stmt) throws SQLException {
         try (ResultSet rs = stmt.executeQuery("SHOW SLAVE STATUS")) {
             if(rs.next()) {
-                DebugLogger.debug("IO: " + rs.getObject("Slave_IO_Running").toString() + ", SQL: " + rs.getObject("Slave_SQL_Running") + ", LAG: " + getSlaveLag(rs));
-                return ("Yes".equals(rs.getObject("Slave_IO_Running")) && "Yes".equals(rs.getObject("Slave_SQL_Running")) && getSlaveLag(rs).orElse(Integer.MAX_VALUE) < this.maxSlaveLag);
+                return "Yes".equals(rs.getObject("Slave_IO_Running")) && "Yes".equals(rs.getObject("Slave_SQL_Running")) && rs.getInt("Seconds_Behind_Master") <= this.maxSlaveLag;
             }
-            return true; //This is probably master, so assume it is running
-        }
-    }
-
-    private static Optional<Integer> getSlaveLag(final ResultSet rs) {
-        try {
-            return Optional.of(rs.getInt("Seconds_Behind_Master"));
-        } catch (SQLException ex) {
-            return Optional.empty();
+            return true; //Assume its master and thus working fine
         }
     }
 }
