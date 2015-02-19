@@ -1,0 +1,6 @@
+com/github/tomitakussaari/mysqlcluscon/BasicConnectionWrapper.class
+com/github/tomitakussaari/mysqlcluscon/read_cluster/ReadClusterConnectionChecker.class
+com/github/tomitakussaari/mysqlcluscon/galera/GaleraClusterConnectionChecker.class
+com/github/tomitakussaari/mysqlcluscon/MysclusconDriver.class
+com/github/tomitakussaari/mysqlcluscon/ConnectionChecker.class
+com/github/tomitakussaari/mysqlcluscon/URLHelpers.class
