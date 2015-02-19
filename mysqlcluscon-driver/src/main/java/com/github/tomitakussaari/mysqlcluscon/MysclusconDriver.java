@@ -66,7 +66,8 @@ public class MysclusconDriver extends NonRegisteringDriver {
 
     private Connection createActualConnection(String jdbcUrl, ConnectionChecker connectionChecker, Properties info) throws SQLException {
         final List<String> hosts = URLHelpers.getHosts(jdbcUrl);
-        return tryToOpenConnectionToValidHost(hosts, connectionChecker, info, jdbcUrl).orElseThrow(() -> new SQLException("Unable to open connection, no valid host found from: "+hosts));
+        return tryToOpenConnectionToValidHost(hosts, connectionChecker, info, jdbcUrl)
+                .orElseThrow(() -> new SQLException("Unable to open connection, no valid host found from hosts: "+hosts));
 
     }
 
