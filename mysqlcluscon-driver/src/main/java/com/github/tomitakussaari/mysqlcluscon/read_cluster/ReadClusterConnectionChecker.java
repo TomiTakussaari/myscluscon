@@ -1,6 +1,7 @@
 package com.github.tomitakussaari.mysqlcluscon.read_cluster;
 
 import com.github.tomitakussaari.mysqlcluscon.ConnectionChecker;
+import com.github.tomitakussaari.mysqlcluscon.DebugLogger;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -37,7 +38,7 @@ public class ReadClusterConnectionChecker implements ConnectionChecker {
     private boolean slaveIsRunning(final Statement stmt) throws SQLException {
         try (ResultSet rs = stmt.executeQuery("SHOW SLAVE STATUS")) {
             if(rs.next()) {
-                System.out.println(rs.getObject("Slave_IO_Running").toString() + rs.getObject("Slave_SQL_Running") + getSlaveLag(rs));
+                DebugLogger.debug("IO: " + rs.getObject("Slave_IO_Running").toString() + ", SQL: " + rs.getObject("Slave_SQL_Running") + ", LAG: " + getSlaveLag(rs));
                 return ("Yes".equals(rs.getObject("Slave_IO_Running")) && "Yes".equals(rs.getObject("Slave_SQL_Running")) && getSlaveLag(rs).orElse(Integer.MAX_VALUE) < this.maxSlaveLag);
             }
             return true; //This is probably master, so assume it is running

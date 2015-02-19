@@ -71,7 +71,7 @@ public class MysclusconDriver extends NonRegisteringDriver {
     }
 
     private Optional<Connection> tryToOpenConnectionToValidHost(List<String> hosts, ConnectionChecker connectionChecker, Properties info, String jdbcUrl) throws SQLException {
-        System.out.println("Trying to connect to hosts " + hosts + " from url " + jdbcUrl);
+        DebugLogger.debug("Trying to connect to hosts " + hosts + " from url " + jdbcUrl);
         final List<String> copyOfHosts = new ArrayList<>(hosts);
         Collections.shuffle(copyOfHosts);
 
@@ -85,12 +85,12 @@ public class MysclusconDriver extends NonRegisteringDriver {
     }
 
     private Optional<Connection> tryConnectingToHost(String host, ConnectionChecker connectionChecker, String jdbcUrl, Properties info) throws SQLException {
-        System.out.println("Trying to connect to host " + host);
+        DebugLogger.debug("Trying to connect to host " + host);
         final URL originalUrl = URLHelpers.createConvertedUrl(jdbcUrl);
         final String connectUrl = URLHelpers.constructMysqlConnectUrl(originalUrl, host);
         Connection connection = null;
         try {
-            System.out.println("Connecting to " + connectUrl);
+            DebugLogger.debug("Connecting to " + connectUrl);
             connection = openConnection(info, connectUrl);
             if(connectionChecker.connectionOk(connection)) {
                 return Optional.of(connection);
@@ -98,7 +98,7 @@ public class MysclusconDriver extends NonRegisteringDriver {
                 connection.close();
             }
         } catch(Exception e) {
-            System.out.println("Error while verifying connection " + connectUrl+ " "+e.getMessage());
+            DebugLogger.debug("Error while verifying connection " + connectUrl + " " + e.getMessage());
             if(connection != null) {connection.close();}
         }
         return Optional.empty();
@@ -112,7 +112,7 @@ public class MysclusconDriver extends NonRegisteringDriver {
 
     private ConnectionChecker chooseConnectionChecker(String jdbcUrl, Map<String, List<String>> queryParameters) {
         String protocol = URLHelpers.getProtocol(jdbcUrl);
-        System.out.println("Parsed Protocol: " + protocol + " from url" + jdbcUrl);
+        DebugLogger.debug("Parsed Protocol: " + protocol + " from url" + jdbcUrl);
         switch (protocol) {
             case mysqlReadClusterConnectorName: return new ReadClusterConnectionChecker(queryParameters);
             case galeraClusterConnectorName:    return new GaleraClusterConnectionChecker();

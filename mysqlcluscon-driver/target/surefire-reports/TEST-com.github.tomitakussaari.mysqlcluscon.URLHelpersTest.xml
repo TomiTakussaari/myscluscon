@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuite tests="8" failures="0" name="com.github.tomitakussaari.mysqlcluscon.URLHelpersTest" time="0.048" errors="0" skipped="0">
+<testsuite tests="8" failures="0" name="com.github.tomitakussaari.mysqlcluscon.URLHelpersTest" time="0.046" errors="0" skipped="0">
   <properties>
     <property name="java.runtime.name" value="Java(TM) SE Runtime Environment"/>
     <property name="sun.boot.library.path" value="/Library/Java/JavaVirtualMachines/jdk1.8.0_20.jdk/Contents/Home/jre/lib"/>
@@ -62,10 +62,10 @@
     <property name="ftp.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
     <property name="sun.cpu.isalist" value=""/>
   </properties>
-  <testcase classname="com.github.tomitakussaari.mysqlcluscon.URLHelpersTest" name="parsesMultipleHostsWithPortsFromUrl" time="0.004"/>
+  <testcase classname="com.github.tomitakussaari.mysqlcluscon.URLHelpersTest" name="parsesMultipleHostsWithPortsFromUrl" time="0.005"/>
   <testcase classname="com.github.tomitakussaari.mysqlcluscon.URLHelpersTest" name="parsesMultipleQueryParametersCorrectly" time="0"/>
-  <testcase classname="com.github.tomitakussaari.mysqlcluscon.URLHelpersTest" name="constructsMysqlConnectUrlWithDefinedPort" time="0.043"/>
-  <testcase classname="com.github.tomitakussaari.mysqlcluscon.URLHelpersTest" name="constructsMysqlConnectUrl" time="0"/>
+  <testcase classname="com.github.tomitakussaari.mysqlcluscon.URLHelpersTest" name="constructsMysqlConnectUrlWithDefinedPort" time="0.039"/>
+  <testcase classname="com.github.tomitakussaari.mysqlcluscon.URLHelpersTest" name="constructsMysqlConnectUrl" time="0.001"/>
   <testcase classname="com.github.tomitakussaari.mysqlcluscon.URLHelpersTest" name="parsesSingleQueryParameterCorrectly" time="0"/>
   <testcase classname="com.github.tomitakussaari.mysqlcluscon.URLHelpersTest" name="constructsMysqlConnectUrlWithoutParams" time="0"/>
   <testcase classname="com.github.tomitakussaari.mysqlcluscon.URLHelpersTest" name="parsesSingleHostFromUrl" time="0.001"/>

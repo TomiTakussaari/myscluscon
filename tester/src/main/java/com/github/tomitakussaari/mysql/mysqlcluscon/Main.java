@@ -1,5 +1,6 @@
 package com.github.tomitakussaari.mysql.mysqlcluscon;
 
+import com.github.tomitakussaari.mysqlcluscon.DebugLogger;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -7,13 +8,12 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 public class Main {
 
     public static void main(String...args) throws Exception {
-        Logger.getGlobal().fine("Started");
+        System.setProperty(DebugLogger.class.getCanonicalName()+".debug", "true");
         final String jdbcUrl = args[0];
         final String userName = args[1];
         final String password = args[2];
