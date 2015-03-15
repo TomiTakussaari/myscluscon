@@ -8,7 +8,7 @@ import java.util.concurrent.Executor;
 class ConnectionWrapper implements java.sql.Connection {
 
     private final Connection actualConnection;
-    private final ConnectionChecker connectionChecker;
+    protected final ConnectionChecker connectionChecker;
 
     public ConnectionWrapper(final Connection conn, final ConnectionChecker connectionChecker) {
         this.actualConnection = conn;
