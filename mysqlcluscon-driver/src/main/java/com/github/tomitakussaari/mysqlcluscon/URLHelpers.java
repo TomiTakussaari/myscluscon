@@ -9,7 +9,7 @@ import java.util.*;
 
 class URLHelpers {
 
-    public static String constructMysqlConnectUrl(URL originalUrl, String host) {
+    static String constructMysqlConnectUrl(URL originalUrl, String host) {
         final String protocol = "jdbc:mysql";
         final String port = originalUrl.getPort() != -1 ? ":"+originalUrl.getPort() : "";
         final String database = originalUrl.getPath();
@@ -17,16 +17,16 @@ class URLHelpers {
         return protocol+"://"+host+port+database+queryParams;
     }
 
-    public static List<String> getHosts(String jdbcUrl) {
+    static List<String> getHosts(String jdbcUrl) {
         URL url = createConvertedUrl(jdbcUrl);
         return Arrays.asList(url.getHost().split(","));
     }
 
-    public static String getProtocol(String jdbcUrl) {
+    static String getProtocol(String jdbcUrl) {
         return jdbcUrl.substring(0, jdbcUrl.indexOf("://"));
     }
 
-    public static URL createConvertedUrl(String jdbcUrl) {
+    static URL createConvertedUrl(String jdbcUrl) {
         try {
             //Hacky but it feels simpler than alternatives, as Java URL only supports certain protocols, so protocol is "changed" here to make URL work..
             return new URL(jdbcUrl.replace(MysclusconDriver.galeraClusterConnectorName, "http").replace(MysclusconDriver.mysqlReadClusterConnectorName, "http"));
@@ -35,7 +35,7 @@ class URLHelpers {
         }
     }
 
-    public static Map<String, List<String>> getQueryParameters(String url) throws SQLException {
+    static Map<String, List<String>> getQueryParameters(String url) throws SQLException {
         final Map<String, List<String>> queryParameters = new LinkedHashMap<>();
         final int startOfQueryParams = url.indexOf("?");
         if(startOfQueryParams < 0) {
