@@ -1,6 +1,5 @@
 package com.github.tomitakussaari.mysql.mysqlcluscon;
 
-import com.github.tomitakussaari.mysqlcluscon.DebugLogger;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -13,11 +12,10 @@ import java.util.stream.IntStream;
 public class Main {
 
     public static void main(String...args) throws Exception {
-        System.setProperty(DebugLogger.class.getCanonicalName() + ".debug", "true");
         final String jdbcUrl = args[0];
         final String userName = args[1];
         final String password = args[2];
-        Class.forName("com.github.tomitakussaari.mysqlcluscon.MysclusconDriver");
+        //Class.forName("com.github.tomitakussaari.mysqlcluscon.MysclusconDriver");
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl(jdbcUrl);
         hikariConfig.setUsername(userName);
@@ -25,8 +23,6 @@ public class Main {
         hikariConfig.setConnectionTimeout(1000);
         HikariDataSource hikariDataSource = new HikariDataSource(hikariConfig);
         List<Connection> openedConnections = new ArrayList<>();
-
-
 
         System.out.println("WAITING..");
         Thread.sleep(5000);

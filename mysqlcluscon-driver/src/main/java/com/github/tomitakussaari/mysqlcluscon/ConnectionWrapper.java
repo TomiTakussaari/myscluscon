@@ -5,12 +5,12 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
-class BasicConnectionWrapper implements java.sql.Connection {
+class ConnectionWrapper implements java.sql.Connection {
 
     private final Connection actualConnection;
     private final ConnectionChecker connectionChecker;
 
-    public BasicConnectionWrapper(final Connection conn, final ConnectionChecker connectionChecker) {
+    public ConnectionWrapper(final Connection conn, final ConnectionChecker connectionChecker) {
         this.actualConnection = conn;
         this.connectionChecker = connectionChecker;
     }

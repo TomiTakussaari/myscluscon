@@ -1,7 +1,0 @@
-/Users/tomitaku/git/mysql-connector-cluster/mysqlcluscon-driver/src/main/java/com/github/tomitakussaari/mysqlcluscon/galera/GaleraClusterConnectionChecker.java
-/Users/tomitaku/git/mysql-connector-cluster/mysqlcluscon-driver/src/main/java/com/github/tomitakussaari/mysqlcluscon/DebugLogger.java
-/Users/tomitaku/git/mysql-connector-cluster/mysqlcluscon-driver/src/main/java/com/github/tomitakussaari/mysqlcluscon/read_cluster/ReadClusterConnectionChecker.java
-/Users/tomitaku/git/mysql-connector-cluster/mysqlcluscon-driver/src/main/java/com/github/tomitakussaari/mysqlcluscon/MysclusconDriver.java
-/Users/tomitaku/git/mysql-connector-cluster/mysqlcluscon-driver/src/main/java/com/github/tomitakussaari/mysqlcluscon/ConnectionChecker.java
-/Users/tomitaku/git/mysql-connector-cluster/mysqlcluscon-driver/src/main/java/com/github/tomitakussaari/mysqlcluscon/BasicConnectionWrapper.java
-/Users/tomitaku/git/mysql-connector-cluster/mysqlcluscon-driver/src/main/java/com/github/tomitakussaari/mysqlcluscon/URLHelpers.java

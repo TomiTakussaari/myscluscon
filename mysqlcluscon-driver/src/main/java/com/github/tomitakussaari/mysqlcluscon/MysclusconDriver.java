@@ -2,14 +2,13 @@ package com.github.tomitakussaari.mysqlcluscon;
 
 import com.github.tomitakussaari.mysqlcluscon.galera.GaleraClusterConnectionChecker;
 import com.github.tomitakussaari.mysqlcluscon.read_cluster.ReadClusterConnectionChecker;
-import com.mysql.jdbc.NonRegisteringDriver;
 
 import java.net.URL;
 import java.sql.*;
 import java.util.*;
 import java.util.logging.Logger;
 
-public class MysclusconDriver extends NonRegisteringDriver {
+public class MysclusconDriver implements Driver {
 
     static final Logger LOGGER = Logger.getLogger(MysclusconDriver.class.getName());
 
@@ -23,9 +22,6 @@ public class MysclusconDriver extends NonRegisteringDriver {
 
     public static final String mysqlReadClusterConnectorName = "jdbc:myscluscon:mysql:read_cluster";
     public static final String galeraClusterConnectorName = "jdbc:myscluscon:galera:cluster";
-
-    public MysclusconDriver() throws SQLException {
-    }
 
     @Override
     public Connection connect(String jdbcUrl, Properties info) throws SQLException {
@@ -60,7 +56,7 @@ public class MysclusconDriver extends NonRegisteringDriver {
     }
 
     @Override
-    public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+    public Logger getParentLogger() {
         return LOGGER;
     }
 
@@ -72,7 +68,7 @@ public class MysclusconDriver extends NonRegisteringDriver {
     }
 
     private Optional<Connection> tryToOpenConnectionToValidHost(List<String> hosts, ConnectionChecker connectionChecker, Properties info, String jdbcUrl) throws SQLException {
-        DebugLogger.debug("Trying to connect to hosts " + hosts + " from url " + jdbcUrl);
+        LOGGER.fine("Trying to connect to hosts " + hosts + " from url " + jdbcUrl);
         final List<String> copyOfHosts = new ArrayList<>(hosts);
         Collections.shuffle(copyOfHosts);
 
@@ -86,12 +82,12 @@ public class MysclusconDriver extends NonRegisteringDriver {
     }
 
     private Optional<Connection> tryConnectingToHost(String host, ConnectionChecker connectionChecker, String jdbcUrl, Properties info) throws SQLException {
-        DebugLogger.debug("Trying to connect to host " + host);
+        LOGGER.fine("Trying to connect to host " + host);
         final URL originalUrl = URLHelpers.createConvertedUrl(jdbcUrl);
         final String connectUrl = URLHelpers.constructMysqlConnectUrl(originalUrl, host);
         Connection connection = null;
         try {
-            DebugLogger.debug("Connecting to " + connectUrl);
+            LOGGER.fine("Connecting to " + connectUrl);
             connection = openConnection(info, connectUrl);
             if(connectionChecker.connectionOk(connection)) {
                 return Optional.of(connection);
@@ -99,7 +95,7 @@ public class MysclusconDriver extends NonRegisteringDriver {
                 connection.close();
             }
         } catch(Exception e) {
-            DebugLogger.debug("Error while verifying connection " + connectUrl + " " + e.getMessage());
+            LOGGER.fine("Error while verifying connection " + connectUrl + " " + e.getMessage());
             if(connection != null) {connection.close();}
         }
         return Optional.empty();
@@ -113,7 +109,7 @@ public class MysclusconDriver extends NonRegisteringDriver {
 
     private ConnectionChecker chooseConnectionChecker(String jdbcUrl, Map<String, List<String>> queryParameters) {
         String protocol = URLHelpers.getProtocol(jdbcUrl);
-        DebugLogger.debug("Parsed Protocol: " + protocol + " from url" + jdbcUrl);
+        LOGGER.fine("Parsed Protocol: " + protocol + " from url" + jdbcUrl);
         switch (protocol) {
             case mysqlReadClusterConnectorName: return new ReadClusterConnectionChecker(queryParameters);
             case galeraClusterConnectorName:    return new GaleraClusterConnectionChecker();
@@ -122,7 +118,7 @@ public class MysclusconDriver extends NonRegisteringDriver {
     }
 
     protected Connection createConnectionWrapperHandler(final ConnectionChecker connectionChecker, Connection actualConnection) {
-        return new BasicConnectionWrapper(actualConnection, connectionChecker);
+        return new ConnectionWrapper(actualConnection, connectionChecker);
     }
 
 }

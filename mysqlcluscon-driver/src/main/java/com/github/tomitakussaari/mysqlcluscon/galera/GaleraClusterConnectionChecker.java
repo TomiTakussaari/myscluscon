@@ -14,9 +14,9 @@ public class GaleraClusterConnectionChecker implements ConnectionChecker{
         try (Statement stmt = conn.createStatement()) {
             ResultSet rs = stmt.executeQuery("SHOW STATUS like 'wsrep_ready'");
             if(rs.next()) {
-                return "ON".equals(rs.getString("Value"));
+                return "ON".equalsIgnoreCase(rs.getString("Value"));
             }
         }
-        return false;
+        return true;
     }
 }
