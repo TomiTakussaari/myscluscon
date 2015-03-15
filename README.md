@@ -4,10 +4,6 @@ myscluscon
 
 JDBC Driver for always connecting to valid server in your (Mysql) Galera or read-only slave cluster
 
-## WORK IN PROGRESS, PROBABLY DOES NOT WORK YET..
-
-JDBC Driver for always connecting to valid server in your (Mysql) Galera or read-only slave cluster 
-
 ##  What
 - Define servers in your cluster in jdbc url
 - Always connect to valid server in your cluster.
@@ -30,20 +26,22 @@ JDBC Driver for always connecting to valid server in your (Mysql) Galera or read
 
 
 ## Usage example with standard JDBC
-        
-    Class.forName("com.mysql.jdbc.Driver"); //Load your favorite Mysql driver that understands JDBC urls which start with jdbc:mysql
-    Class.forName("com.github.tomitakussaari.mysql.MysclusconDriver"); //Load myscluscon driver
+
     
-    //Connection to serverOne, serverTwo or serverThree, which ever is valid or some if all are valid
-    Connection connection = DriverManager.getConnection("jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,ServerThree:2134/database", "username", "password");
-            
+    //Connection to mysql read cluster consisting of serverOne, serverTwo or serverThree, which ever is valid or some if all are valid
+    Connection connection = DriverManager.getConnection("jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,serverThree":2134/database", "username", "password");
+
+    //Connection to galera cluster consisting of serverOne, serverTwo or serverThree, which ever is valid or some if all are valid
+    Connection connection = DriverManager.getConnection("jdbc:myscluscon:galera:cluster://serverOne,serverTwo,serverThree", "username", "password");
+
+All queryparameters are passed on untouched
+
 
 ## Usage example with [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool 
             
     Class.forName("com.mysql.jdbc.Driver"); //Load your favorite Mysql driver that understands JDBC urls which start with jdbc:mysql
              
     HikariConfig hikariConfig = new HikariConfig();
-    hikariConfig.setDriverClassName("com.github.tomitakussaari.mysql.MysclusconDriver");
     hikariConfig.setJdbcUrl(jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,ServerThree:2134/database);
     hikariConfig.setUsername("username");
     hikariConfig.setPassword("password");
