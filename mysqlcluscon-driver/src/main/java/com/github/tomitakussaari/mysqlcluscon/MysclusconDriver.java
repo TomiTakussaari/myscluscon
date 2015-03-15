@@ -64,7 +64,6 @@ public class MysclusconDriver implements Driver {
         final List<String> hosts = URLHelpers.getHosts(jdbcUrl);
         return tryToOpenConnectionToValidHost(hosts, connectionChecker, info, jdbcUrl)
                 .orElseThrow(() -> new SQLException("Unable to open connection, no valid host found from hosts: "+hosts));
-
     }
 
     private Optional<Connection> tryToOpenConnectionToValidHost(List<String> hosts, ConnectionChecker connectionChecker, Properties info, String jdbcUrl) throws SQLException {
@@ -88,7 +87,7 @@ public class MysclusconDriver implements Driver {
         Connection connection = null;
         try {
             LOGGER.fine("Connecting to " + connectUrl);
-            connection = openConnection(info, connectUrl);
+            connection = openRealConnection(info, connectUrl);
             if(connectionChecker.connectionOk(connection)) {
                 return Optional.of(connection);
             } else {
@@ -102,7 +101,7 @@ public class MysclusconDriver implements Driver {
     }
 
 
-    protected Connection openConnection(Properties info, String connectUrl) throws SQLException {
+    protected Connection openRealConnection(Properties info, String connectUrl) throws SQLException {
         return DriverManager.getConnection(connectUrl, info);
     }
 

@@ -15,7 +15,7 @@ public class Main {
         final String jdbcUrl = args[0];
         final String userName = args[1];
         final String password = args[2];
-        //Class.forName("com.github.tomitakussaari.mysqlcluscon.MysclusconDriver");
+
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl(jdbcUrl);
         hikariConfig.setUsername(userName);

@@ -11,6 +11,9 @@ public class GaleraClusterConnectionChecker implements ConnectionChecker{
 
     @Override
     public boolean connectionOk(final Connection conn) throws SQLException {
+        if(! conn.isValid(1)) {
+           return false;
+        }
         try (Statement stmt = conn.createStatement()) {
             ResultSet rs = stmt.executeQuery("SHOW STATUS like 'wsrep_ready'");
             if(rs.next()) {

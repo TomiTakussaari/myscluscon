@@ -24,9 +24,12 @@ public class ReadClusterConnectionChecker implements ConnectionChecker {
 
     @Override
     public boolean connectionOk(Connection conn) throws SQLException {
-        try (Statement stmt = conn.createStatement()) {
-            return slaveIsRunning(stmt);
+        if(conn.isValid(1)) {
+            try (Statement stmt = conn.createStatement()) {
+                return slaveIsRunning(stmt);
+            }
         }
+        return false;
     }
 
     private static Integer getParameter(Map<String, List<String>> queryParameters, String parameter, Integer defaultValue) {

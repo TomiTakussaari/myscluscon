@@ -12,6 +12,7 @@ import java.sql.Statement;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +31,7 @@ public class ReadClusterConnectionCheckerTest {
     @Test
     public void allIsGoodCase() throws SQLException {
         when(conn.createStatement()).thenReturn(statement);
+        when(conn.isValid(anyInt())).thenReturn(true);
         when(statement.executeQuery("SHOW SLAVE STATUS")).thenReturn(resultSet);
         when(resultSet.getObject("Slave_IO_Running")).thenReturn("Yes");
         when(resultSet.getObject("Slave_SQL_Running")).thenReturn("Yes");
@@ -41,8 +43,16 @@ public class ReadClusterConnectionCheckerTest {
     }
 
     @Test
+    public void connectionReportsItsNotValid() throws SQLException {
+        when(conn.createStatement()).thenReturn(statement);
+        when(conn.isValid(anyInt())).thenReturn(false);
+        assertFalse(checker.connectionOk(conn));
+    }
+
+    @Test
     public void slaveIsLaggingBehind() throws SQLException {
         when(conn.createStatement()).thenReturn(statement);
+        when(conn.isValid(anyInt())).thenReturn(true);
         when(statement.executeQuery("SHOW SLAVE STATUS")).thenReturn(resultSet);
         when(resultSet.getObject("Slave_IO_Running")).thenReturn("Yes");
         when(resultSet.getObject("Slave_SQL_Running")).thenReturn("Yes");
@@ -56,6 +66,7 @@ public class ReadClusterConnectionCheckerTest {
     @Test
     public void isNotSlave() throws SQLException {
         when(conn.createStatement()).thenReturn(statement);
+        when(conn.isValid(anyInt())).thenReturn(true);
         when(statement.executeQuery("SHOW SLAVE STATUS")).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(false);
 
@@ -65,6 +76,7 @@ public class ReadClusterConnectionCheckerTest {
     @Test
     public void slaveIONotRunning() throws SQLException {
         when(conn.createStatement()).thenReturn(statement);
+        when(conn.isValid(anyInt())).thenReturn(true);
         when(statement.executeQuery("SHOW SLAVE STATUS")).thenReturn(resultSet);
         when(resultSet.getObject("Slave_IO_Running")).thenReturn("no");
         when(resultSet.getObject("Slave_SQL_Running")).thenReturn("Yes");
@@ -77,6 +89,7 @@ public class ReadClusterConnectionCheckerTest {
     @Test
     public void slaveSQLNotRunning() throws SQLException {
         when(conn.createStatement()).thenReturn(statement);
+        when(conn.isValid(anyInt())).thenReturn(true);
         when(statement.executeQuery("SHOW SLAVE STATUS")).thenReturn(resultSet);
         when(resultSet.getObject("Slave_IO_Running")).thenReturn("Yes");
         when(resultSet.getObject("Slave_SQL_Running")).thenReturn("no");
