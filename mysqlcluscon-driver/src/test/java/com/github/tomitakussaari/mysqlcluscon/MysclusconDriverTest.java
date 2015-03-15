@@ -53,10 +53,10 @@ public class MysclusconDriverTest {
         when(resultSet.next()).thenReturn(false).thenReturn(false).thenReturn(true);
         when(resultSet.getString("Value")).thenReturn("ON");
 
-        driver.connect("jdbc:myscluscon:galera:cluster://A,B,C", new Properties());
-        assertTrue(driver.connectUrls.contains("jdbc:mysql://A"));
-        assertTrue(driver.connectUrls.contains("jdbc:mysql://B"));
-        assertTrue(driver.connectUrls.contains("jdbc:mysql://C"));
+        driver.connect("jdbc:myscluscon:galera:cluster://A,B,C:1234?foo=bar&bar=foo", new Properties());
+        assertTrue(driver.connectUrls.contains("jdbc:mysql://A:1234?foo=bar&bar=foo"));
+        assertTrue(driver.connectUrls.contains("jdbc:mysql://B:1234?foo=bar&bar=foo"));
+        assertTrue(driver.connectUrls.contains("jdbc:mysql://C:1234?foo=bar&bar=foo"));
     }
 
     @Test
@@ -85,10 +85,10 @@ public class MysclusconDriverTest {
         when(resultSet.getObject("Seconds_Behind_Master")).thenReturn("0");
         when(resultSet.next()).thenReturn(true);
 
-        driver.connect("jdbc:myscluscon:mysql:read_cluster://A,B,C", new Properties());
-        assertTrue(driver.connectUrls.contains("jdbc:mysql://A"));
-        assertTrue(driver.connectUrls.contains("jdbc:mysql://B"));
-        assertTrue(driver.connectUrls.contains("jdbc:mysql://C"));
+        driver.connect("jdbc:myscluscon:mysql:read_cluster://A,B,C:1234?foo=bar&bar=foo", new Properties());
+        assertTrue(driver.connectUrls.contains("jdbc:mysql://A:1234?foo=bar&bar=foo"));
+        assertTrue(driver.connectUrls.contains("jdbc:mysql://B:1234?foo=bar&bar=foo"));
+        assertTrue(driver.connectUrls.contains("jdbc:mysql://C:1234?foo=bar&bar=foo"));
     }
 
     class TestableMysqlclusconDriver extends MysclusconDriver {
