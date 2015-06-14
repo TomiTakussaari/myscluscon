@@ -2,6 +2,8 @@ myscluscon
 ==========
 [![Build Status](https://travis-ci.org/TomiTakussaari/myscluscon.svg)](https://travis-ci.org/TomiTakussaari/myscluscon)
 
+[![codecov.io](http://codecov.io/github/TomiTakussaari/myscluscon/coverage.svg?branch=master)](http://codecov.io/github/TomiTakussaari/myscluscon?branch=master)
+
 JDBC Driver for always connecting to valid server in your (Mysql) Galera or read-only slave cluster
 
 ##  What
