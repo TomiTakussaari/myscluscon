@@ -40,6 +40,14 @@ public class URLHelpersTest {
     }
 
     @Test
+    public void valueLessQueryParam() throws SQLException {
+        Map<String, List<String>> queryParameters = URLHelpers.getQueryParameters("jdbc:mysql://server.domain.fi/database?foobar");
+        assertTrue(queryParameters.containsKey("foobar"));
+        assertEquals(1, queryParameters.get("foobar").size());
+        assertEquals(null, queryParameters.get("foobar").get(0));
+    }
+
+    @Test
     public void parsesSingleHostFromUrl() throws MalformedURLException {
         assertEquals("[serverOne]", URLHelpers.getHosts("jdbc:myscluscon:mysql:read_cluster://serverOne/database").toString());
     }
