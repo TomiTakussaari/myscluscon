@@ -47,19 +47,21 @@ class URLHelpers {
 
     private static Map<String, List<String>> parseQueryParameters(String url, Map<String, List<String>> queryParameters, int startOfQueryParams) throws SQLException {
         final String[] pairs = url.substring(startOfQueryParams).split("&");
+        for (String pair : pairs) {
+            final int idx = pair.indexOf("=");
+            final String key = idx > 0 ? decode(pair.substring(0, idx)) : pair;
+            List<String> values = queryParameters.computeIfAbsent(key, (k) -> new LinkedList<>());
+            final String value = idx > 0 && pair.length() > idx + 1 ? decode(pair.substring(idx + 1)) : null;
+            values.add(value);
+        }
+        return queryParameters;
+    }
+
+    private static String decode(String substring) throws SQLException {
         try {
-            for (String pair : pairs) {
-                final int idx = pair.indexOf("=");
-                final String key = idx > 0 ? URLDecoder.decode(pair.substring(0, idx), "UTF-8") : pair;
-                if (!queryParameters.containsKey(key)) {
-                    queryParameters.put(key, new LinkedList<>());
-                }
-                final String value = idx > 0 && pair.length() > idx + 1 ? URLDecoder.decode(pair.substring(idx + 1), "UTF-8") : null;
-                queryParameters.get(key).add(value);
-            }
-            return queryParameters;
+            return URLDecoder.decode(substring, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            throw new SQLException(e);
+            throw new SQLException("Error urldecoding: "+substring, e);
         }
     }
 

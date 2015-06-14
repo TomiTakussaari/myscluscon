@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class URLHelpersTest {
 
@@ -29,6 +30,13 @@ public class URLHelpersTest {
     public void parsesSingleQueryParameterCorrectly() throws SQLException {
         Map<String, List<String>> queryParameters = URLHelpers.getQueryParameters("jdbc:mysql://server.domain.fi/database?foobar=true");
         assertEquals("[true]", queryParameters.get("foobar").toString());
+    }
+
+    @Test
+    public void parsesMultipleQueryParametersForSameKey() throws SQLException {
+        Map<String, List<String>> queryParameters = URLHelpers.getQueryParameters("jdbc:mysql://server.domain.fi/database?foobar=bar&foobar=foo");
+        assertTrue(queryParameters.get("foobar").contains("bar"));
+        assertTrue(queryParameters.get("foobar").contains("foo"));
     }
 
     @Test
