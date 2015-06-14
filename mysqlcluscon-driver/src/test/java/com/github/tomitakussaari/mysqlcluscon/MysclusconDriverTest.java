@@ -13,6 +13,7 @@ import java.util.Properties;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -108,6 +109,16 @@ public class MysclusconDriverTest {
     @Test
     public void returnsNullForNormalMysqlConnectUrl() throws SQLException {
         assertNull(driver.connect("jdbc:mysql://A:1234?foo=bar&bar=foo", new Properties()));
+    }
+
+    @Test
+    public void proxiedConnectionForwardsIsValidCallToConnectionChecker() throws SQLException {
+        ConnectionChecker checker = Mockito.mock(ConnectionChecker.class);
+        Connection conn = Mockito.mock(Connection.class);
+        Connection proxyConnection = driver.createProxyConnection(checker, conn);
+        when(checker.connectionOk(conn)).thenReturn(true);
+        assertTrue(proxyConnection.isValid(10));
+        verify(checker).connectionOk(conn);
     }
 
     class TestableMysqlclusconDriver extends MysclusconDriver {

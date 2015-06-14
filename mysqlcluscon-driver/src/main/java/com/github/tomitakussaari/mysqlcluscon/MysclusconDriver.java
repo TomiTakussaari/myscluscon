@@ -29,7 +29,7 @@ public class MysclusconDriver implements Driver {
         if(acceptsURL(jdbcUrl)) {
             final Map<String, List<String>> queryParameters = URLHelpers.getQueryParameters(jdbcUrl);
             final ConnectionChecker connectionChecker = chooseConnectionChecker(jdbcUrl, queryParameters);
-            return createConnectionWrapperHandler(connectionChecker, createActualConnection(jdbcUrl, connectionChecker, info));
+            return createProxyConnection(connectionChecker, createActualConnection(jdbcUrl, connectionChecker, info));
         } else {
             return null;
         }
@@ -121,7 +121,7 @@ public class MysclusconDriver implements Driver {
         }
     }
 
-    protected Connection createConnectionWrapperHandler(final ConnectionChecker connectionChecker, Connection actualConnection) {
+    protected Connection createProxyConnection(final ConnectionChecker connectionChecker, Connection actualConnection) {
         return (Connection) Proxy.newProxyInstance(getClass().getClassLoader(), new Class[]{Connection.class}, (proxy, method, args) -> {
             if(method.getName().equals("isValid")) {
                 return connectionChecker.connectionOk(actualConnection);
