@@ -1,7 +1,5 @@
 package com.github.tomitakussaari.mysqlcluscon;
 
-import com.github.tomitakussaari.mysqlcluscon.galera.GaleraClusterConnectionChecker;
-import com.github.tomitakussaari.mysqlcluscon.read_cluster.ReadClusterConnectionChecker;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -40,10 +38,9 @@ public class MysclusconDriverTest {
         when(resultSet.next()).thenReturn(true);
         when(resultSet.getString("Value")).thenReturn("ON");
 
-        ConnectionWrapper connection = (ConnectionWrapper) driver.connect("jdbc:myscluscon:galera:cluster://A,B,C", new Properties());
+        Connection connection = driver.connect("jdbc:myscluscon:galera:cluster://A,B,C", new Properties());
         assertNotNull(connection);
         assertTrue(connection.isValid(1));
-        assertTrue(connection.connectionChecker instanceof GaleraClusterConnectionChecker);
     }
 
     @Test
@@ -71,10 +68,9 @@ public class MysclusconDriverTest {
         when(resultSet.getObject("Seconds_Behind_Master")).thenReturn("0");
         when(resultSet.next()).thenReturn(true);
 
-        ConnectionWrapper connection = (ConnectionWrapper) driver.connect("jdbc:myscluscon:mysql:read_cluster://A,B,C", new Properties());
+        Connection connection = driver.connect("jdbc:myscluscon:mysql:read_cluster://A,B,C", new Properties());
         assertNotNull(connection);
         assertTrue(connection.isValid(1));
-        assertTrue(connection.connectionChecker instanceof ReadClusterConnectionChecker);
     }
 
     @Test

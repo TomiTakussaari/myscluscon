@@ -3,6 +3,7 @@ package com.github.tomitakussaari.mysqlcluscon;
 import com.github.tomitakussaari.mysqlcluscon.galera.GaleraClusterConnectionChecker;
 import com.github.tomitakussaari.mysqlcluscon.read_cluster.ReadClusterConnectionChecker;
 
+import java.lang.reflect.Proxy;
 import java.net.URL;
 import java.sql.*;
 import java.util.*;
@@ -117,7 +118,12 @@ public class MysclusconDriver implements Driver {
     }
 
     protected Connection createConnectionWrapperHandler(final ConnectionChecker connectionChecker, Connection actualConnection) {
-        return new ConnectionWrapper(actualConnection, connectionChecker);
+        return (Connection) Proxy.newProxyInstance(getClass().getClassLoader(), new Class[]{Connection.class}, (proxy, method, args) -> {
+            if(method.getName().equals("isValid")) {
+                return connectionChecker.connectionOk(actualConnection);
+            }
+            return method.invoke(actualConnection, args);
+        });
     }
 
 }
