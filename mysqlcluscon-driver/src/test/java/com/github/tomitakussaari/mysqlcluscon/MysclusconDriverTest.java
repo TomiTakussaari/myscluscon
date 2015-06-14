@@ -100,6 +100,20 @@ public class MysclusconDriverTest {
     }
 
     @Test
+    public void closesRealConnectionIfValidityCheckThrowsException() throws SQLException {
+        when(mockConn.createStatement()).thenReturn(mockStatement);
+        when(mockConn.isValid(anyInt())).thenReturn(true);
+        when(mockStatement.executeQuery("SHOW SLAVE STATUS")).thenThrow(new RuntimeException("Foobar"));
+        try {
+            driver.connect("jdbc:myscluscon:mysql:read_cluster://A:1234?foo=bar&bar=foo", new Properties());
+            fail("Should not have passed");
+        } catch (SQLException e) {
+            assertEquals("Unable to open connection, no valid host found from hosts: [A]", e.getMessage());
+        }
+        verify(mockConn).close();
+    }
+
+    @Test
     public void acceptsUrl() throws SQLException {
         assertFalse(driver.acceptsURL("jdbc:mysql://127.0.0.1"));
         assertTrue(driver.acceptsURL(MysclusconDriver.galeraClusterConnectorName + "://127.0.0.1"));
