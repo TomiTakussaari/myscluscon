@@ -10,6 +10,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class URLHelpersTest {
 
@@ -73,6 +74,16 @@ public class URLHelpersTest {
     public void constructsMysqlConnectUrlWithDefinedPort() throws MalformedURLException {
         URL url = new URL("http://this.part.is.ignored:12345/database?foobar=true&barfoo=false");
         assertEquals("jdbc:mysql://server.domain.fi:12345/database?foobar=true&barfoo=false", URLHelpers.constructMysqlConnectUrl(url, "server.domain.fi"));
+    }
+
+    @Test
+    public void invalidUrl() {
+        try {
+            URLHelpers.createConvertedUrl("foobar");
+            fail("Should have failed");
+        } catch(RuntimeException e) {
+            assertTrue(e.getCause() instanceof MalformedURLException);
+        }
     }
 
 

@@ -57,11 +57,11 @@ class URLHelpers {
         return queryParameters;
     }
 
-    private static String decode(String substring) throws SQLException {
+    static String decode(String substring) throws SQLException {
         try {
             return URLDecoder.decode(substring, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            throw new SQLException("Error urldecoding: "+substring, e);
+            throw new SQLException("Unable to decode url using UTF-8: "+substring, e);
         }
     }
 

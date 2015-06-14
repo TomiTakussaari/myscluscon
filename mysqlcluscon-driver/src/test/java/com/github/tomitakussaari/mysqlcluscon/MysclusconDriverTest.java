@@ -135,6 +135,17 @@ public class MysclusconDriverTest {
         verify(checker).connectionOk(conn);
     }
 
+    @Test
+    public void isNotJdbcCompliant() {
+        assertFalse(driver.jdbcCompliant());
+    }
+
+    @Test
+    public void version() {
+        assertEquals(1, driver.getMajorVersion());
+        assertEquals(0, driver.getMinorVersion());
+    }
+
     class TestableMysqlclusconDriver extends MysclusconDriver {
         final List<String> connectUrls = new ArrayList<>();
         @Override
