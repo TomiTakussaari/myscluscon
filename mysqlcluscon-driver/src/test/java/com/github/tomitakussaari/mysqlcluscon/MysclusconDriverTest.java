@@ -60,9 +60,9 @@ public class MysclusconDriverTest {
         when(mockResultSet.getString("Value")).thenReturn("ON");
 
         driver.connect("jdbc:myscluscon:galera:cluster://A,B,C:1234?foo=bar&bar=foo", new Properties());
-        assertTrue(driver.connectUrls.contains("jdbc:mysql://A:1234?foo=bar&bar=foo"));
-        assertTrue(driver.connectUrls.contains("jdbc:mysql://B:1234?foo=bar&bar=foo"));
-        assertTrue(driver.connectUrls.contains("jdbc:mysql://C:1234?foo=bar&bar=foo"));
+        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://A:1234?foo=bar&bar=foo"));
+        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://B:1234?foo=bar&bar=foo"));
+        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://C:1234?foo=bar&bar=foo"));
     }
 
     @Test
@@ -93,9 +93,21 @@ public class MysclusconDriverTest {
         when(mockResultSet.next()).thenReturn(true);
 
         driver.connect("jdbc:myscluscon:mysql:read_cluster://A,B,C:1234?foo=bar&bar=foo", new Properties());
-        assertTrue(driver.connectUrls.contains("jdbc:mysql://A:1234?foo=bar&bar=foo"));
-        assertTrue(driver.connectUrls.contains("jdbc:mysql://B:1234?foo=bar&bar=foo"));
-        assertTrue(driver.connectUrls.contains("jdbc:mysql://C:1234?foo=bar&bar=foo"));
+        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://A:1234?foo=bar&bar=foo"));
+        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://B:1234?foo=bar&bar=foo"));
+        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://C:1234?foo=bar&bar=foo"));
+    }
+
+    @Test
+    public void acceptsUrl() throws SQLException {
+        assertFalse(driver.acceptsURL("jdbc:mysql://127.0.0.1"));
+        assertTrue(driver.acceptsURL(MysclusconDriver.galeraClusterConnectorName + "://127.0.0.1"));
+        assertTrue(driver.acceptsURL(MysclusconDriver.mysqlReadClusterConnectorName + "://127.0.0.1"));
+    }
+
+    @Test
+    public void returnsNullForNormalMysqlConnectUrl() throws SQLException {
+        assertNull(driver.connect("jdbc:mysql://A:1234?foo=bar&bar=foo", new Properties()));
     }
 
     class TestableMysqlclusconDriver extends MysclusconDriver {

@@ -26,9 +26,13 @@ public class MysclusconDriver implements Driver {
 
     @Override
     public Connection connect(String jdbcUrl, Properties info) throws SQLException {
-        final Map<String, List<String>> queryParameters = URLHelpers.getQueryParameters(jdbcUrl);
-        final ConnectionChecker connectionChecker = chooseConnectionChecker(jdbcUrl, queryParameters);
-        return createConnectionWrapperHandler(connectionChecker, createActualConnection(jdbcUrl, connectionChecker, info));
+        if(acceptsURL(jdbcUrl)) {
+            final Map<String, List<String>> queryParameters = URLHelpers.getQueryParameters(jdbcUrl);
+            final ConnectionChecker connectionChecker = chooseConnectionChecker(jdbcUrl, queryParameters);
+            return createConnectionWrapperHandler(connectionChecker, createActualConnection(jdbcUrl, connectionChecker, info));
+        } else {
+            return null;
+        }
     }
 
     @Override
