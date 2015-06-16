@@ -3,13 +3,11 @@ package com.github.tomitakussaari.mysqlcluscon;
 import org.junit.Test;
 import org.junit.internal.AssumptionViolatedException;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.sql.Connection;
 import java.sql.DriverManager;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 public class MyslclusconDriverMysqlTest {
 
@@ -31,10 +29,10 @@ public class MyslclusconDriverMysqlTest {
     }
 
     private void assumeMysqlIsAccessible() {
-        try(ServerSocket socket = new ServerSocket()) {
-            socket.bind(new InetSocketAddress("127.0.0.1", 3306));
+        try(Connection conn = DriverManager.getConnection("jdbc:mysql://127.0.0.1", "travis", "")) {
+            assumeTrue(conn.isValid(1));
+        } catch (Exception ignored) {
             throw new AssumptionViolatedException("Mysql should have been accessible for test to run");
-        } catch (IOException ignored) {
         }
     }
 }

@@ -3,13 +3,13 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>myscluscon</artifactId>
+        <artifactId>myscluscon-parent</artifactId>
         <groupId>com.github.tomitakussaari</groupId>
-        <version>0.1.0</version>
+        <version>0.1.2</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>mysqlcluscon-driver</artifactId>
+    <artifactId>myslcluscon-driver</artifactId>
 
     <dependencies>
         <dependency>
@@ -25,5 +25,6 @@
             <artifactId>mockito-all</artifactId>
         </dependency>
     </dependencies>
+
 
 </project>
