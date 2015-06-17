@@ -25,6 +25,14 @@ JDBC Driver for always connecting to valid server in your (Mysql) Galera or read
 - I've never written a JDBC driver, so wanted to try it out.. :)      
 
 
+# Maven 
+
+    <dependency>
+        <groupId>com.github.tomitakussaari</groupId>
+        <artifactId>myslcluscon-driver</artifactId>
+        <version>0.1.2</version>
+    </dependency>
+
 ## Usage example with standard JDBC
 
     
