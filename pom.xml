@@ -5,43 +5,38 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.github.tomitakussaari</groupId>
-    <artifactId>myscluscon-parent</artifactId>
+    <artifactId>myscluscon-driver</artifactId>
     <version>0.1.2</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>JDBC Driver for always connecting to valid server in your Mariadb/Mysql/Galera cluster</description>
     <url>https://github.com/TomiTakussaari/myscluscon</url>
 
-    <modules>
-        <module>myslcluscon-driver</module>
-    </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <packaging>pom</packaging>
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>mysql</groupId>
-                <artifactId>mysql-connector-java</artifactId>
-                <version>5.1.31</version>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>4.11</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-all</artifactId>
-                <version>1.9.5</version>
-                <scope>test</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+    <packaging>jar</packaging>
+    <dependencies>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.31</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.9.5</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
     <licenses>
         <license>
             <name>MIT License</name>
