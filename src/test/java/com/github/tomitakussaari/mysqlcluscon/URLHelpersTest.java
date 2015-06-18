@@ -79,7 +79,7 @@ public class URLHelpersTest {
     @Test
     public void invalidUrl() {
         try {
-            URLHelpers.createConvertedUrl("foobar");
+            URLHelpers.createURL("foobar");
             fail("Should have failed");
         } catch(RuntimeException e) {
             assertTrue(e.getCause() instanceof MalformedURLException);

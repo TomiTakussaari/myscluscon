@@ -18,7 +18,7 @@ class URLHelpers {
     }
 
     static List<String> getHosts(String jdbcUrl) {
-        URL url = createConvertedUrl(jdbcUrl);
+        URL url = createURL(jdbcUrl);
         return Arrays.asList(url.getHost().split(","));
     }
 
@@ -26,7 +26,7 @@ class URLHelpers {
         return jdbcUrl.substring(0, jdbcUrl.indexOf("://"));
     }
 
-    static URL createConvertedUrl(String jdbcUrl) {
+    static URL createURL(String jdbcUrl) {
         try {
             //Hacky but it feels simpler than alternatives, as Java URL only supports certain protocols, so protocol is "changed" here to make URL work..
             return new URL(jdbcUrl.replace(MysclusconDriver.galeraClusterConnectorName, "http").replace(MysclusconDriver.mysqlReadClusterConnectorName, "http"));

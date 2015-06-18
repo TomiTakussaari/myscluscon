@@ -87,7 +87,7 @@ public class MysclusconDriver implements Driver {
 
     private Optional<Connection> tryConnectingToHost(String host, ConnectionChecker connectionChecker, String jdbcUrl, Properties info) throws SQLException {
         LOGGER.fine("Trying to connect to host " + host);
-        final URL originalUrl = URLHelpers.createConvertedUrl(jdbcUrl);
+        final URL originalUrl = URLHelpers.createURL(jdbcUrl);
         final String connectUrl = URLHelpers.constructMysqlConnectUrl(originalUrl, host);
         Connection connection = null;
         try {
