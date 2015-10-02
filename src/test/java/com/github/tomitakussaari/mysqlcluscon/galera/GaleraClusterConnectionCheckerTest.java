@@ -62,4 +62,10 @@ public class GaleraClusterConnectionCheckerTest {
         when(resultSet.next()).thenReturn(false);
         assertEquals(ConnectionStatus.OK, clusterConnectionChecker.connectionStatus(conn));
     }
+
+    @Test
+    public void deadWhenExceptionIsThrown() throws SQLException {
+        when(conn.createStatement()).thenThrow(new SQLException(""));
+        assertEquals(ConnectionStatus.DEAD, clusterConnectionChecker.connectionStatus(conn));
+    }
 }

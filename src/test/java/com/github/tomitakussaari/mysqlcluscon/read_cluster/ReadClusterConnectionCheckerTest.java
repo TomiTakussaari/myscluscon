@@ -50,6 +50,12 @@ public class ReadClusterConnectionCheckerTest {
     }
 
     @Test
+    public void deadWhenExceptionIsThrown() throws SQLException {
+        when(conn.createStatement()).thenThrow(new SQLException(""));
+        assertEquals(ConnectionStatus.DEAD, checker.connectionStatus(conn));
+    }
+
+    @Test
     public void ifThreeSecondsBehindMasterThenSlaveIsLaggingBehind() throws SQLException {
         when(conn.createStatement()).thenReturn(statement);
         when(conn.isValid(anyInt())).thenReturn(true);
