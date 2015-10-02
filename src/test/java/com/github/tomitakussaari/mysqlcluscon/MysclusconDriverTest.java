@@ -129,9 +129,9 @@ public class MysclusconDriverTest {
         ConnectionChecker checker = Mockito.mock(ConnectionChecker.class);
         Connection conn = Mockito.mock(Connection.class);
         Connection proxyConnection = driver.createProxyConnection(checker, conn);
-        when(checker.connectionStatus(conn)).thenReturn(ConnectionStatus.OK);
+        when(checker.connectionStatus(conn, 10)).thenReturn(ConnectionStatus.OK);
         assertTrue(proxyConnection.isValid(10));
-        verify(checker).connectionStatus(conn);
+        verify(checker).connectionStatus(conn, 10);
     }
 
     @Test
@@ -201,13 +201,13 @@ public class MysclusconDriverTest {
     @Test
     public void findsOkConnection() {
         List<ConnectionAndStatus> connections = new ArrayList<>();
-        connections.add(new ConnectionAndStatus(null, conn -> ConnectionStatus.OK));
-        connections.add(new ConnectionAndStatus(null, conn -> ConnectionStatus.BEHIND));
-        connections.add(new ConnectionAndStatus(null, conn -> ConnectionStatus.BEHIND));
-        connections.add(new ConnectionAndStatus(null, conn -> ConnectionStatus.DEAD));
-        connections.add(new ConnectionAndStatus(null, conn -> ConnectionStatus.DEAD));
-        connections.add(new ConnectionAndStatus(null, conn -> ConnectionStatus.STOPPED));
-        connections.add(new ConnectionAndStatus(null, conn -> ConnectionStatus.STOPPED));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.OK));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.BEHIND));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.BEHIND));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.DEAD));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.DEAD));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
         Collections.shuffle(connections);
         Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections);
         assertEquals(ConnectionStatus.OK, bestConnection.get().getStatus());
@@ -216,9 +216,9 @@ public class MysclusconDriverTest {
     @Test
     public void findsLaggingConnectionWhenItIsBest() {
         List<ConnectionAndStatus> connections = new ArrayList<>();
-        connections.add(new ConnectionAndStatus(null, conn -> ConnectionStatus.BEHIND));
-        connections.add(new ConnectionAndStatus(null, conn -> ConnectionStatus.DEAD));
-        connections.add(new ConnectionAndStatus(null, conn -> ConnectionStatus.STOPPED));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.BEHIND));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.DEAD));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
         Collections.shuffle(connections);
 
         Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections);
@@ -228,8 +228,8 @@ public class MysclusconDriverTest {
     @Test
     public void findsStoppedConnectionWhenItIsBest() {
         List<ConnectionAndStatus> connections = new ArrayList<>();
-        connections.add(new ConnectionAndStatus(null, conn -> ConnectionStatus.DEAD));
-        connections.add(new ConnectionAndStatus(null, conn -> ConnectionStatus.STOPPED));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.DEAD));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
         Collections.shuffle(connections);
 
         Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections);
@@ -239,7 +239,7 @@ public class MysclusconDriverTest {
     @Test
     public void doesNotReturnDeadConnection() {
         List<ConnectionAndStatus> connections = new ArrayList<>();
-        connections.add(new ConnectionAndStatus(null, conn -> ConnectionStatus.DEAD));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.DEAD));
 
         Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections);
         assertFalse(bestConnection.toString(), bestConnection.isPresent());

@@ -138,7 +138,7 @@ public class MysclusconDriver implements Driver {
         return (Connection) Proxy.newProxyInstance(getClass().getClassLoader(), new Class[]{Connection.class}, (proxy, method, args) -> {
             switch(method.getName()) {
                 case "isValid":
-                    return connectionChecker.connectionStatus(actualConnection).usable();
+                    return connectionChecker.connectionStatus(actualConnection, (Integer) args[0]).usable();
                 default:
                     return method.invoke(actualConnection, args);
             }

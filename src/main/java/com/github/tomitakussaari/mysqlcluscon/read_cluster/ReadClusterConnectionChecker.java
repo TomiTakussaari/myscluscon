@@ -24,10 +24,11 @@ public class ReadClusterConnectionChecker implements ConnectionChecker {
     }
 
     @Override
-    public ConnectionStatus connectionStatus(Connection conn) {
+    public ConnectionStatus connectionStatus(Connection conn, int timeoutInSeconds) {
         try {
-            if(conn.isValid(1)) {
+            if(conn.isValid(timeoutInSeconds)) {
                 try (Statement stmt = conn.createStatement()) {
+                    stmt.setQueryTimeout(timeoutInSeconds);
                     return slaveStatus(stmt);
                 }
             }
