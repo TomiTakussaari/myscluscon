@@ -1,5 +1,6 @@
 package com.github.tomitakussaari.mysqlcluscon.read_cluster;
 
+import com.github.tomitakussaari.mysqlcluscon.ConnectionStatus;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -10,8 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -38,7 +38,7 @@ public class ReadClusterConnectionCheckerTest {
         when(resultSet.getObject("Seconds_Behind_Master")).thenReturn("0");
         when(resultSet.next()).thenReturn(true);
 
-        assertTrue("Connection was not valid", checker.connectionOk(conn));
+        assertEquals("Connection was not valid", ConnectionStatus.OK, checker.connectionStatus(conn));
         verify(resultSet).getObject("Slave_IO_Running");
     }
 
@@ -46,11 +46,11 @@ public class ReadClusterConnectionCheckerTest {
     public void connectionReportsItsNotValid() throws SQLException {
         when(conn.createStatement()).thenReturn(statement);
         when(conn.isValid(anyInt())).thenReturn(false);
-        assertFalse(checker.connectionOk(conn));
+        assertEquals(ConnectionStatus.DEAD, checker.connectionStatus(conn));
     }
 
     @Test
-    public void slaveIsLaggingBehind() throws SQLException {
+    public void ifThreeSecondsBehindMasterThenSlaveIsLaggingBehind() throws SQLException {
         when(conn.createStatement()).thenReturn(statement);
         when(conn.isValid(anyInt())).thenReturn(true);
         when(statement.executeQuery("SHOW SLAVE STATUS")).thenReturn(resultSet);
@@ -59,7 +59,21 @@ public class ReadClusterConnectionCheckerTest {
         when(resultSet.getInt("Seconds_Behind_Master")).thenReturn(3);
         when(resultSet.next()).thenReturn(true);
 
-        assertFalse(checker.connectionOk(conn));
+        assertEquals(ConnectionStatus.BEHIND, checker.connectionStatus(conn));
+        verify(resultSet).getObject("Slave_IO_Running");
+    }
+
+    @Test
+    public void ifTwoSecondsBehindMasterThenSlaveIsOK() throws SQLException {
+        when(conn.createStatement()).thenReturn(statement);
+        when(conn.isValid(anyInt())).thenReturn(true);
+        when(statement.executeQuery("SHOW SLAVE STATUS")).thenReturn(resultSet);
+        when(resultSet.getObject("Slave_IO_Running")).thenReturn("Yes");
+        when(resultSet.getObject("Slave_SQL_Running")).thenReturn("Yes");
+        when(resultSet.getInt("Seconds_Behind_Master")).thenReturn(2);
+        when(resultSet.next()).thenReturn(true);
+
+        assertEquals(ConnectionStatus.OK, checker.connectionStatus(conn));
         verify(resultSet).getObject("Slave_IO_Running");
     }
 
@@ -70,7 +84,7 @@ public class ReadClusterConnectionCheckerTest {
         when(statement.executeQuery("SHOW SLAVE STATUS")).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(false);
 
-        assertTrue(checker.connectionOk(conn));
+        assertEquals(ConnectionStatus.OK, checker.connectionStatus(conn));
     }
 
     @Test
@@ -83,7 +97,7 @@ public class ReadClusterConnectionCheckerTest {
         when(resultSet.getInt("Seconds_Behind_Master")).thenReturn(0);
         when(resultSet.next()).thenReturn(true);
 
-        assertFalse(checker.connectionOk(conn));
+        assertEquals(ConnectionStatus.STOPPED, checker.connectionStatus(conn));
     }
 
     @Test
@@ -96,7 +110,7 @@ public class ReadClusterConnectionCheckerTest {
         when(resultSet.getInt("Seconds_Behind_Master")).thenReturn(0);
         when(resultSet.next()).thenReturn(true);
 
-        assertFalse(checker.connectionOk(conn));
+        assertEquals(ConnectionStatus.STOPPED, checker.connectionStatus(conn));
     }
 
 }

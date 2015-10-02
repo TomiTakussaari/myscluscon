@@ -8,6 +8,7 @@ import java.net.URL;
 import java.sql.*;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class MysclusconDriver implements Driver {
 
@@ -68,7 +69,7 @@ public class MysclusconDriver implements Driver {
     private Connection createActualConnection(String jdbcUrl, ConnectionChecker connectionChecker, Properties info) throws SQLException {
         final List<String> hosts = URLHelpers.getHosts(jdbcUrl);
         return tryToOpenConnectionToValidHost(hosts, connectionChecker, info, jdbcUrl)
-                .orElseThrow(() -> new SQLException("Unable to open connection, no valid host found from hosts: "+hosts));
+                .orElseThrow(() -> new SQLException("Unable to open connection, no valid host found from hosts: " + hosts));
     }
 
     private Optional<Connection> tryToOpenConnectionToValidHost(List<String> hosts, ConnectionChecker connectionChecker, Properties info, String jdbcUrl) throws SQLException {
@@ -76,31 +77,43 @@ public class MysclusconDriver implements Driver {
         final List<String> copyOfHosts = new ArrayList<>(hosts);
         Collections.shuffle(copyOfHosts);
 
-        for (String host : copyOfHosts) {
-            Optional<Connection> conn = tryConnectingToHost(host, connectionChecker, jdbcUrl, info);
-            if (conn.isPresent()) {
-                return conn;
+        List<ConnectionAndStatus> connections = null;
+        try {
+            connections = copyOfHosts.stream()
+                    .map(host -> tryConnectingToHost(host, jdbcUrl, info))
+                    .filter(Optional::isPresent).map(Optional::get)
+                    .map(conn -> new ConnectionAndStatus(conn, connectionChecker))
+                    .collect(Collectors.toList());
+            return findAndRemoveBestConnection(connections);
+        } finally {
+            if(connections != null) {
+                connections.forEach(ConnectionAndStatus::close);
             }
         }
-        return Optional.empty();
     }
 
-    private Optional<Connection> tryConnectingToHost(String host, ConnectionChecker connectionChecker, String jdbcUrl, Properties info) throws SQLException {
+    private Optional<Connection> findAndRemoveBestConnection(List<ConnectionAndStatus> connections) {
+        Optional<ConnectionAndStatus> bestConnection = findBestConnection(connections);
+        bestConnection.ifPresent(connections::remove);
+        return bestConnection.map(conn -> conn.connection);
+    }
+
+    Optional<ConnectionAndStatus> findBestConnection(List<ConnectionAndStatus> connections) {
+        return connections.stream()
+            .filter(connectionAndStatus -> connectionAndStatus.getStatus() != ConnectionStatus.DEAD)
+            .sorted((left, right) -> right.getStatus().priority.compareTo(left.getStatus().priority))
+            .findFirst();
+    }
+
+    private Optional<Connection> tryConnectingToHost(String host, String jdbcUrl, Properties info) {
         LOGGER.fine("Trying to connect to host " + host);
         final URL originalUrl = URLHelpers.createURL(jdbcUrl);
         final String connectUrl = URLHelpers.constructMysqlConnectUrl(originalUrl, host);
-        Connection connection = null;
         try {
             LOGGER.fine("Connecting to " + connectUrl);
-            connection = openRealConnection(info, connectUrl);
-            if(connectionChecker.connectionOk(connection)) {
-                return Optional.of(connection);
-            } else {
-                connection.close();
-            }
+            return Optional.of(openRealConnection(info, connectUrl));
         } catch(Exception e) {
             LOGGER.fine("Error while verifying connection " + connectUrl + " " + e.getMessage());
-            if(connection != null) {connection.close();}
         }
         return Optional.empty();
     }
@@ -123,10 +136,12 @@ public class MysclusconDriver implements Driver {
 
     protected Connection createProxyConnection(final ConnectionChecker connectionChecker, Connection actualConnection) {
         return (Connection) Proxy.newProxyInstance(getClass().getClassLoader(), new Class[]{Connection.class}, (proxy, method, args) -> {
-            if(method.getName().equals("isValid")) {
-                return connectionChecker.connectionOk(actualConnection);
+            switch(method.getName()) {
+                case "isValid":
+                    return connectionChecker.connectionStatus(actualConnection).usable();
+                default:
+                    return method.invoke(actualConnection, args);
             }
-            return method.invoke(actualConnection, args);
         });
     }
 

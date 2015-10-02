@@ -1,6 +1,7 @@
 package com.github.tomitakussaari.mysqlcluscon.read_cluster;
 
 import com.github.tomitakussaari.mysqlcluscon.ConnectionChecker;
+import com.github.tomitakussaari.mysqlcluscon.ConnectionStatus;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -23,25 +24,37 @@ public class ReadClusterConnectionChecker implements ConnectionChecker {
     }
 
     @Override
-    public boolean connectionOk(Connection conn) throws SQLException {
-        if(conn.isValid(1)) {
-            try (Statement stmt = conn.createStatement()) {
-                return slaveIsRunning(stmt);
+    public ConnectionStatus connectionStatus(Connection conn) {
+        try {
+            if(conn.isValid(1)) {
+                try (Statement stmt = conn.createStatement()) {
+                    return slaveStatus(stmt);
+                }
             }
+        } catch (Exception e) {
+            //ignored
         }
-        return false;
+        return ConnectionStatus.DEAD;
     }
 
     private static Integer getParameter(Map<String, List<String>> queryParameters, String parameter, Integer defaultValue) {
         return Integer.valueOf(queryParameters.getOrDefault(parameter, new ArrayList<>()).stream().findFirst().orElse(defaultValue.toString()));
     }
 
-    private boolean slaveIsRunning(final Statement stmt) throws SQLException {
+    private ConnectionStatus slaveStatus(final Statement stmt) throws SQLException {
         try (ResultSet rs = stmt.executeQuery("SHOW SLAVE STATUS")) {
             if(rs.next()) {
-                return "Yes".equals(rs.getObject("Slave_IO_Running")) && "Yes".equals(rs.getObject("Slave_SQL_Running")) && rs.getInt("Seconds_Behind_Master") <= this.maxSlaveLag;
+                final boolean running = "Yes".equals(rs.getObject("Slave_IO_Running")) && "Yes".equals(rs.getObject("Slave_SQL_Running"));
+                final boolean notTooMuchBehind = rs.getInt("Seconds_Behind_Master") <= this.maxSlaveLag;
+                if(running && notTooMuchBehind) {
+                    return ConnectionStatus.OK;
+                } else if (running) {
+                    return ConnectionStatus.BEHIND;
+                } else {
+                    return ConnectionStatus.STOPPED;
+                }
             }
-            return true; //Assume its master and thus working fine
+            return ConnectionStatus.OK; //Assume its master and thus working fine
         }
     }
 }

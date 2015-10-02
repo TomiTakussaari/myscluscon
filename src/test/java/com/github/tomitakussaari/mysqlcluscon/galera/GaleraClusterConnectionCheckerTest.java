@@ -1,5 +1,6 @@
 package com.github.tomitakussaari.mysqlcluscon.galera;
 
+import com.github.tomitakussaari.mysqlcluscon.ConnectionStatus;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -10,8 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.when;
 
@@ -34,14 +34,14 @@ public class GaleraClusterConnectionCheckerTest {
         when(statement.executeQuery("SHOW STATUS like 'wsrep_ready'")).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(true);
         when(resultSet.getString("Value")).thenReturn("ON");
-        assertTrue(clusterConnectionChecker.connectionOk(conn));
+        assertEquals(ConnectionStatus.OK, clusterConnectionChecker.connectionStatus(conn));
     }
 
     @Test
     public void connectionReportsItsNotValid() throws SQLException {
         when(conn.createStatement()).thenReturn(statement);
         when(conn.isValid(anyInt())).thenReturn(false);
-        assertFalse(clusterConnectionChecker.connectionOk(conn));
+        assertEquals(ConnectionStatus.DEAD, clusterConnectionChecker.connectionStatus(conn));
     }
 
     @Test
@@ -51,7 +51,7 @@ public class GaleraClusterConnectionCheckerTest {
         when(statement.executeQuery("SHOW STATUS like 'wsrep_ready'")).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(true);
         when(resultSet.getString("Value")).thenReturn("OFF");
-        assertFalse(clusterConnectionChecker.connectionOk(conn));
+        assertEquals(ConnectionStatus.STOPPED, clusterConnectionChecker.connectionStatus(conn));
     }
 
     @Test
@@ -60,6 +60,6 @@ public class GaleraClusterConnectionCheckerTest {
         when(conn.isValid(anyInt())).thenReturn(true);
         when(statement.executeQuery("SHOW STATUS like 'wsrep_ready'")).thenReturn(resultSet);
         when(resultSet.next()).thenReturn(false);
-        assertTrue(clusterConnectionChecker.connectionOk(conn));
+        assertEquals(ConnectionStatus.OK, clusterConnectionChecker.connectionStatus(conn));
     }
 }
