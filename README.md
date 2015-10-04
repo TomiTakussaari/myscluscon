@@ -6,6 +6,7 @@ JDBC Driver for always connecting to valid server in your (Mysql) Galera or read
 
 ##  What
 - Define servers in your cluster in jdbc url
+- Classifies each server with status (DEAD, STOPPED, BEHIND, or OK) and then chooses best one (least useful status can be configured)
 - Always connect to valid server in your cluster.
     - Either Galera node that returns WSREP_READY=ON
     - Or read-only slave in normal mysql master-slave replication that is valid (replication is running)
@@ -30,19 +31,30 @@ JDBC Driver for always connecting to valid server in your (Mysql) Galera or read
     <dependency>
         <groupId>com.github.tomitakussaari</groupId>
         <artifactId>myslcluscon-driver</artifactId>
-        <version>0.1.2</version>
+        <version>0.2.0</version>
     </dependency>
 
 ## Usage example with standard JDBC
 
     
-    //Connection to mysql read cluster consisting of serverOne, serverTwo or serverThree, which ever is valid or some if all are valid
+    //Connection to any valid server in mysql read cluster consisting of serverOne, serverTwo or serverThree.
     Connection connection = DriverManager.getConnection("jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,serverThree":2134/database", "username", "password");
 
-    //Connection to galera cluster consisting of serverOne, serverTwo or serverThree, which ever is valid or some if all are valid
+    //Connection to any valid server in galera cluster consisting of serverOne, serverTwo or serverThree
     Connection connection = DriverManager.getConnection("jdbc:myscluscon:galera:cluster://serverOne,serverTwo,serverThree", "username", "password");
 
 All queryparameters are passed on untouched
+
+### Configuration
+
+Following queryparameters are supported:
+
+    - maxSlaveLag=<max amount of seconds slave can be behind master to be considered OK>
+       - If over this value, slave will be considered BEHIND. 
+       - Not supported for Galera
+    
+    - connectionStatus=<status of connection that is considered usable, one of DEAD, STOPPED, BEHIND, or OK>
+       - Default STOPPED 
 
 
 ## Usage example with [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool 

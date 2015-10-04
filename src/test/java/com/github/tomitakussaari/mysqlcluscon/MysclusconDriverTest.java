@@ -128,9 +128,19 @@ public class MysclusconDriverTest {
     public void proxiedConnectionForwardsIsValidCallToConnectionChecker() throws SQLException {
         ConnectionChecker checker = Mockito.mock(ConnectionChecker.class);
         Connection conn = Mockito.mock(Connection.class);
-        Connection proxyConnection = driver.createProxyConnection(checker, conn);
+        Connection proxyConnection = driver.createProxyConnection(checker, conn, ConnectionStatus.STOPPED);
         when(checker.connectionStatus(conn, 10)).thenReturn(ConnectionStatus.OK);
         assertTrue(proxyConnection.isValid(10));
+        verify(checker).connectionStatus(conn, 10);
+    }
+
+    @Test
+    public void connectionWithStatusBehindIsNotValidWhenWeWantAtleastOk() throws SQLException {
+        ConnectionChecker checker = Mockito.mock(ConnectionChecker.class);
+        Connection conn = Mockito.mock(Connection.class);
+        Connection proxyConnection = driver.createProxyConnection(checker, conn, ConnectionStatus.OK);
+        when(checker.connectionStatus(conn, 10)).thenReturn(ConnectionStatus.BEHIND);
+        assertFalse(proxyConnection.isValid(10));
         verify(checker).connectionStatus(conn, 10);
     }
 
@@ -162,6 +172,24 @@ public class MysclusconDriverTest {
         mockConnection("jdbc:mysql://C:1234?foo=bar&bar=foo", "broken", 0, false, true);
 
         Connection connection = configurableDriver.connect("jdbc:myscluscon:mysql:read_cluster://A,B,C:1234?foo=bar&bar=foo", new Properties());
+        assertEquals("lagging", connection.toString());
+    }
+
+    @Test(expected = SQLException.class)
+    public void stoppedConnectionIsNotReturnedWhenWeWantAtleastBehind() throws SQLException {
+        mockConnection("jdbc:mysql://A:1234?foo=bar&bar=foo&connectionStatus=behind", "stopped", 0, true, false);
+        mockConnection("jdbc:mysql://C:1234?foo=bar&bar=foo&connectionStatus=behind", "broken", 0, false, true);
+
+        configurableDriver.connect("jdbc:myscluscon:mysql:read_cluster://A,B,C:1234?foo=bar&bar=foo&connectionStatus=behind", new Properties());
+    }
+
+    @Test
+    public void returnsConnectionWithStatusEqualOrAboveWanted() throws SQLException {
+        mockConnection("jdbc:mysql://B:1234?foo=bar&bar=foo&connectionStatus=behind", "lagging", 3, true, true);
+        mockConnection("jdbc:mysql://A:1234?foo=bar&bar=foo&connectionStatus=behind", "stopped", 0, true, false);
+        mockConnection("jdbc:mysql://C:1234?foo=bar&bar=foo&connectionStatus=behind", "broken", 0, false, true);
+
+        Connection connection = configurableDriver.connect("jdbc:myscluscon:mysql:read_cluster://A,B,C:1234?foo=bar&bar=foo&connectionStatus=behind", new Properties());
         assertEquals("lagging", connection.toString());
     }
 
@@ -209,7 +237,7 @@ public class MysclusconDriverTest {
         connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
         connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
         Collections.shuffle(connections);
-        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections);
+        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections, ConnectionStatus.STOPPED);
         assertEquals(ConnectionStatus.OK, bestConnection.get().getStatus());
     }
 
@@ -221,7 +249,31 @@ public class MysclusconDriverTest {
         connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
         Collections.shuffle(connections);
 
-        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections);
+        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections, ConnectionStatus.STOPPED);
+        assertEquals(ConnectionStatus.BEHIND, bestConnection.get().getStatus());
+    }
+
+    @Test
+    public void doesNotReturnLaggingConnectionWhenWeWantAtleastOk() {
+        List<ConnectionAndStatus> connections = new ArrayList<>();
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.BEHIND));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.DEAD));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
+        Collections.shuffle(connections);
+
+        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections, ConnectionStatus.OK);
+        assertFalse(bestConnection.isPresent());
+    }
+
+    @Test
+    public void returnsLaggingConnectionWhenWeWantAtleastitAndItIsBestAvailable() {
+        List<ConnectionAndStatus> connections = new ArrayList<>();
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.BEHIND));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.DEAD));
+        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
+        Collections.shuffle(connections);
+
+        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections, ConnectionStatus.BEHIND);
         assertEquals(ConnectionStatus.BEHIND, bestConnection.get().getStatus());
     }
 
@@ -232,7 +284,7 @@ public class MysclusconDriverTest {
         connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
         Collections.shuffle(connections);
 
-        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections);
+        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections, ConnectionStatus.STOPPED);
         assertEquals(ConnectionStatus.STOPPED, bestConnection.get().getStatus());
     }
 
@@ -241,7 +293,7 @@ public class MysclusconDriverTest {
         List<ConnectionAndStatus> connections = new ArrayList<>();
         connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.DEAD));
 
-        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections);
+        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections, ConnectionStatus.STOPPED);
         assertFalse(bestConnection.toString(), bestConnection.isPresent());
     }
 

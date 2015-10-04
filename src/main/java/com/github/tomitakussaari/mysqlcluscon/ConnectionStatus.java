@@ -1,5 +1,7 @@
 package com.github.tomitakussaari.mysqlcluscon;
 
+import java.util.Optional;
+
 public enum ConnectionStatus {
 
     DEAD(0), STOPPED(1), BEHIND(2), OK(3);
@@ -9,8 +11,11 @@ public enum ConnectionStatus {
         this.priority = i;
     }
 
-    public boolean usable() {
-        return this != DEAD;
+    public static Optional<ConnectionStatus> from(String s) {
+        try {
+            return Optional.of(ConnectionStatus.valueOf(s.toUpperCase()));
+        } catch(IllegalArgumentException e) {
+            return Optional.empty();
+        }
     }
-
 }

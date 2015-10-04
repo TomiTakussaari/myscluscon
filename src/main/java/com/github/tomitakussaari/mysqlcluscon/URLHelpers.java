@@ -7,7 +7,7 @@ import java.net.URLDecoder;
 import java.sql.SQLException;
 import java.util.*;
 
-class URLHelpers {
+public class URLHelpers {
 
     static String constructMysqlConnectUrl(URL originalUrl, String host) {
         final String protocol = "jdbc:mysql";
@@ -33,6 +33,10 @@ class URLHelpers {
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static String getParameter(Map<String, List<String>> queryParameters, String parameter, String defaultValue) {
+        return queryParameters.getOrDefault(parameter, new ArrayList<>()).stream().findFirst().orElse(defaultValue.toString());
     }
 
     static Map<String, List<String>> getQueryParameters(String url) throws SQLException {
