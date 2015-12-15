@@ -30,7 +30,7 @@ JDBC Driver for always connecting to valid server in your (Mysql) Galera or read
 
     <dependency>
         <groupId>com.github.tomitakussaari</groupId>
-        <artifactId>myslcluscon-driver</artifactId>
+        <artifactId>myscluscon-driver</artifactId>
         <version>0.2.0</version>
     </dependency>
 
@@ -38,7 +38,7 @@ JDBC Driver for always connecting to valid server in your (Mysql) Galera or read
 
     
     //Connection to any valid server in mysql read cluster consisting of serverOne, serverTwo or serverThree.
-    Connection connection = DriverManager.getConnection("jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,serverThree":2134/database", "username", "password");
+    Connection connection = DriverManager.getConnection("jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,serverThree:2134/database", "username", "password");
 
     //Connection to any valid server in galera cluster consisting of serverOne, serverTwo or serverThree
     Connection connection = DriverManager.getConnection("jdbc:myscluscon:galera:cluster://serverOne,serverTwo,serverThree", "username", "password");
@@ -62,7 +62,7 @@ Following queryparameters are supported:
     Class.forName("com.mysql.jdbc.Driver"); //Load your favorite Mysql driver that understands JDBC urls which start with jdbc:mysql
              
     HikariConfig hikariConfig = new HikariConfig();
-    hikariConfig.setJdbcUrl(jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,ServerThree:2134/database);
+    hikariConfig.setJdbcUrl("jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,ServerThree:2134/database");
     hikariConfig.setUsername("username");
     hikariConfig.setPassword("password");
     
