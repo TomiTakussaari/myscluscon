@@ -2,6 +2,7 @@ package com.github.tomitakussaari.mysqlcluscon.read_cluster;
 
 import com.github.tomitakussaari.mysqlcluscon.ConnectionChecker;
 import com.github.tomitakussaari.mysqlcluscon.ConnectionStatus;
+import com.github.tomitakussaari.mysqlcluscon.MysclusconDriver;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -10,9 +11,12 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ReadClusterConnectionChecker implements ConnectionChecker {
 
+    private static final Logger LOGGER = Logger.getLogger(ReadClusterConnectionChecker.class.getName());
     private final int maxSlaveLag;
 
     public ReadClusterConnectionChecker(int maxSlaveLag) {
@@ -33,7 +37,7 @@ public class ReadClusterConnectionChecker implements ConnectionChecker {
                 }
             }
         } catch (Exception e) {
-            //ignored
+            LOGGER.log(Level.FINE, "Error while checking connection status for: "+conn, e);
         }
         return ConnectionStatus.DEAD;
     }
