@@ -30,14 +30,18 @@ public class ReadClusterConnectionChecker implements ConnectionChecker {
     @Override
     public ConnectionStatus connectionStatus(Connection conn, int timeoutInSeconds) {
         try {
-            if(conn.isValid(timeoutInSeconds)) {
+            if (conn.isValid(timeoutInSeconds)) {
                 try (Statement stmt = conn.createStatement()) {
                     stmt.setQueryTimeout(timeoutInSeconds);
                     return slaveStatus(stmt);
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.FINE, "Error while checking connection status for: "+conn, e);
+            if(e instanceof SQLException && ((SQLException)e).getSQLState().equals("42000")) {
+                LOGGER.log(Level.WARNING, "Access denied (?) while checking status of connection: "+conn, e);
+            } else {
+                LOGGER.log(Level.FINE, "Error while checking connection status for: "+conn, e);
+            }
         }
         return ConnectionStatus.DEAD;
     }
