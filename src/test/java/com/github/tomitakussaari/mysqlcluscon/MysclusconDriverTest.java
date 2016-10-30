@@ -149,7 +149,7 @@ public class MysclusconDriverTest {
     }
 
     @Test
-    public void isNotJdbcCompliantWorksSameAsMysql() throws SQLException {
+    public void jdbcCompliantWorksSameAsMysql() throws SQLException {
         com.mysql.jdbc.Driver mysqlDriver = new com.mysql.jdbc.Driver();
         assertEquals(mysqlDriver.jdbcCompliant(), driver.jdbcCompliant());
     }
