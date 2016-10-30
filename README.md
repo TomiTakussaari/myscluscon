@@ -2,7 +2,7 @@ myscluscon
 ==========
 [![Build Status](https://travis-ci.org/TomiTakussaari/myscluscon.svg)](https://travis-ci.org/TomiTakussaari/myscluscon)[![Coverage Status](https://coveralls.io/repos/github/TomiTakussaari/myscluscon/badge.svg?branch=master)](https://coveralls.io/github/TomiTakussaari/myscluscon?branch=master)
 
-JDBC Driver for always connecting to valid server in your (Mysql) Galera or read-only slave cluster
+JDBC Driver for always connecting to valid server in your Galera or MariaDb/Mysql read-only slave cluster
 
 ##  What
 - Define servers in your cluster in jdbc url
@@ -11,9 +11,10 @@ JDBC Driver for always connecting to valid server in your (Mysql) Galera or read
     - Either Galera node that returns WSREP_READY=ON
     - Or read-only slave in normal mysql master-slave replication that is valid (replication is running)
 - Connections to servers that do not pass validity check, return "false" for isValid(timeout) call.
-    - Your favorite connection pool will notice this, and can then replace faulty connections with proper one, pointing to working server. 
-- Standardish JDBC API.
-- Java8
+    - Do note that Connections created via myscluscon do not switch to another server when server is no longer valid, you need to do it manually
+    - However, most connection pools notice this, and can then replace faulty connections with proper one automatically before giving connections to your code
+- Standardish JDBC API
+- Java8, no other runtime dependencies (but requires jdbc driver supporting jdbc:mysql scheme)
 
 ### Supported schemas
 - jdbc:myscluscon:mysql:read_cluster - for connecting to read only cluster
@@ -21,7 +22,7 @@ JDBC Driver for always connecting to valid server in your (Mysql) Galera or read
       
 ## Why
 - There did not seem to be existing solution for this kind of functionality
-- You can probably do the same using MysqlProxy or HAproxy (and maybe others), but that means you need more servers and (probably) results in more complex overall architecture. 
+- You can probably do the same using MysqlProxy or HAproxy (and maybe others), or via application level "DbManager" but that means you need more servers and code and (most likely) results in more complex overall architecture.
 - It might make sense to do this on driver level if all/most of the applications using your cluster use JDBC.
 - I've never written a JDBC driver, so wanted to try it out.. :)      
 
@@ -52,9 +53,13 @@ Following queryparameters are supported:
     - maxSlaveLag=<max amount of seconds slave can be behind master to be considered OK>
        - If over this value, slave will be considered BEHIND. 
        - Not supported for Galera
+       - Default 2
+       - example: "jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,serverThree:2134/database?maxSlaveLag=3
     
     - connectionStatus=<status of connection that is considered usable, one of DEAD, STOPPED, BEHIND, or OK>
-       - Default STOPPED 
+       - Default STOPPED
+       - BEHIND not supported for Galera
+       - example: "jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,serverThree:2134/database?connectionStatus=BEHIND
 
 
 ## Usage example with [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool 
