@@ -20,13 +20,13 @@ import static org.mockito.Mockito.when;
 public class ReadClusterConnectionCheckerTest {
 
     @Mock
-    Connection conn;
+    private Connection conn;
     @Mock
-    Statement statement;
+    private Statement statement;
     @Mock
-    ResultSet resultSet;
+    private ResultSet resultSet;
 
-    ReadClusterConnectionChecker checker = new ReadClusterConnectionChecker(2);
+    private ReadClusterConnectionChecker checker = new ReadClusterConnectionChecker(2);
 
     @Test
     public void allIsGoodCase() throws SQLException {
@@ -50,8 +50,15 @@ public class ReadClusterConnectionCheckerTest {
     }
 
     @Test
-    public void deadWhenExceptionIsThrown() throws SQLException {
+    public void deadWhenExceptionIsThrownWhenCheckingSlaveStatus() throws SQLException {
+        when(conn.isValid(anyInt())).thenReturn(true);
         when(conn.createStatement()).thenThrow(new SQLException(""));
+        assertEquals(ConnectionStatus.DEAD, checker.connectionStatus(conn));
+    }
+
+    @Test
+    public void deadWhenExceptionIsThrownWhenCheckingValidity() throws SQLException {
+        when(conn.isValid(anyInt())).thenThrow(new SQLException(""));
         assertEquals(ConnectionStatus.DEAD, checker.connectionStatus(conn));
     }
 

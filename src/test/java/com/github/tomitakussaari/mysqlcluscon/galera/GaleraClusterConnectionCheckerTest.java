@@ -19,13 +19,13 @@ import static org.mockito.Mockito.when;
 public class GaleraClusterConnectionCheckerTest {
 
     @Mock
-    Connection conn;
+    private Connection conn;
     @Mock
-    Statement statement;
+    private Statement statement;
     @Mock
-    ResultSet resultSet;
+    private ResultSet resultSet;
 
-    GaleraClusterConnectionChecker clusterConnectionChecker = new GaleraClusterConnectionChecker();
+    private GaleraClusterConnectionChecker clusterConnectionChecker = new GaleraClusterConnectionChecker();
 
     @Test
     public void allIsGoodCase() throws SQLException {
@@ -64,8 +64,15 @@ public class GaleraClusterConnectionCheckerTest {
     }
 
     @Test
-    public void deadWhenExceptionIsThrown() throws SQLException {
+    public void deadWhenExceptionIsThrownWhenCheckingReplication() throws SQLException {
+        when(conn.isValid(anyInt())).thenReturn(true);
         when(conn.createStatement()).thenThrow(new SQLException(""));
+        assertEquals(ConnectionStatus.DEAD, clusterConnectionChecker.connectionStatus(conn));
+    }
+
+    @Test
+    public void deadWhenExceptionIsThrownFromIsValidChek() throws SQLException {
+        when(conn.isValid(anyInt())).thenThrow(new SQLException(""));
         assertEquals(ConnectionStatus.DEAD, clusterConnectionChecker.connectionStatus(conn));
     }
 }

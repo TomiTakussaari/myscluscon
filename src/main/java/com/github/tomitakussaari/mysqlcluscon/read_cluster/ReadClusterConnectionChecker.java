@@ -37,7 +37,7 @@ public class ReadClusterConnectionChecker implements ConnectionChecker {
                 }
             }
         } catch (Exception e) {
-            if(e instanceof SQLException && ((SQLException)e).getSQLState().equals("42000")) {
+            if(e instanceof SQLException && "42000".equals(((SQLException) e).getSQLState())) {
                 LOGGER.log(Level.WARNING, "Access denied (?) while checking status of connection: "+conn, e);
             } else {
                 LOGGER.log(Level.FINE, "Error while checking connection status for: "+conn, e);
