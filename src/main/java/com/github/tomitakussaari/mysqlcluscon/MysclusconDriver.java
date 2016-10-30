@@ -10,6 +10,9 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static com.github.tomitakussaari.mysqlcluscon.Params.DEFAULT_CONNECT_TIMEOUT_IN_MS;
+import static com.github.tomitakussaari.mysqlcluscon.Params.MYSQL_CONNECT_TIMEOUT_PARAM;
+
 public class MysclusconDriver implements Driver {
 
     private static final Logger LOGGER = Logger.getLogger(MysclusconDriver.class.getName());
@@ -29,11 +32,19 @@ public class MysclusconDriver implements Driver {
     public Connection connect(String jdbcUrl, Properties info) throws SQLException {
         if(acceptsURL(jdbcUrl)) {
             final Map<String, List<String>> queryParameters = URLHelpers.getQueryParameters(jdbcUrl);
-            final ConnectionStatus leastUsableConnection = getWantedConnectionStatus(queryParameters);
+            validateQueryParameters(queryParameters, jdbcUrl);
+            final ConnectionStatus wantedConnectionStatus = getWantedConnectionStatus(queryParameters);
             final ConnectionChecker connectionChecker = chooseConnectionChecker(jdbcUrl, queryParameters);
-            return createProxyConnection(connectionChecker, createActualConnection(jdbcUrl, connectionChecker, info, leastUsableConnection), leastUsableConnection);
+            return createProxyConnection(connectionChecker, createActualConnection(jdbcUrl, connectionChecker, info, wantedConnectionStatus, queryParameters), wantedConnectionStatus);
         } else {
             return null;
+        }
+    }
+
+    private void validateQueryParameters(Map<String, List<String>> queryParameters, String jdbcUrl) {
+        if(!queryParameters.containsKey(MYSQL_CONNECT_TIMEOUT_PARAM)) {
+            LOGGER.info(() -> "No connect timeout specified for URL: "+jdbcUrl+ " using default: "+DEFAULT_CONNECT_TIMEOUT_IN_MS);
+            queryParameters.put(MYSQL_CONNECT_TIMEOUT_PARAM, Collections.singletonList(DEFAULT_CONNECT_TIMEOUT_IN_MS.toString()));
         }
     }
 
@@ -67,13 +78,16 @@ public class MysclusconDriver implements Driver {
         return LOGGER;
     }
 
-    private Connection createActualConnection(String jdbcUrl, ConnectionChecker connectionChecker, Properties info, ConnectionStatus leastUsableConnection) throws SQLException {
+    private Connection createActualConnection(String jdbcUrl, ConnectionChecker connectionChecker, Properties info, ConnectionStatus leastUsableConnection, Map<String, List<String>> queryParameters) throws SQLException {
         final List<String> hosts = URLHelpers.getHosts(jdbcUrl);
-        return tryToOpenConnectionToValidHost(hosts, connectionChecker, info, jdbcUrl, leastUsableConnection)
+        return tryToOpenConnectionToValidHost(hosts, connectionChecker, info, jdbcUrl, leastUsableConnection, queryParameters)
                 .orElseThrow(() -> new SQLException("Unable to open connection, no valid host found from hosts: " + hosts));
     }
 
-    private Optional<Connection> tryToOpenConnectionToValidHost(List<String> hosts, ConnectionChecker connectionChecker, Properties info, String jdbcUrl, ConnectionStatus leastUsableConnection) throws SQLException {
+    private Optional<Connection> tryToOpenConnectionToValidHost(List<String> hosts, ConnectionChecker connectionChecker,
+                                                                Properties info, String jdbcUrl,
+                                                                ConnectionStatus wantedConnectionStatus,
+                                                                Map<String, List<String>> queryParameters) throws SQLException {
         LOGGER.fine("Trying to connect to hosts " + hosts + " from url " + jdbcUrl);
         final List<String> copyOfHosts = new ArrayList<>(hosts);
         Collections.shuffle(copyOfHosts);
@@ -81,11 +95,11 @@ public class MysclusconDriver implements Driver {
         List<ConnectionAndStatus> connections = null;
         try {
             connections = copyOfHosts.stream()
-                    .map(host -> tryConnectingToHost(host, jdbcUrl, info))
+                    .map(host -> tryConnectingToHost(host, jdbcUrl, info, queryParameters))
                     .filter(Optional::isPresent).map(Optional::get)
                     .map(conn -> new ConnectionAndStatus(conn, connectionChecker))
                     .collect(Collectors.toList());
-            return findAndRemoveBestConnection(connections, leastUsableConnection);
+            return findAndRemoveBestConnection(connections, wantedConnectionStatus);
         } finally {
             if(connections != null) {
                 connections.forEach(ConnectionAndStatus::close);
@@ -99,17 +113,16 @@ public class MysclusconDriver implements Driver {
         return bestConnection.map(conn -> conn.connection);
     }
 
-    Optional<ConnectionAndStatus> findBestConnection(List<ConnectionAndStatus> connections, ConnectionStatus leastUsableConnection) {
+    Optional<ConnectionAndStatus> findBestConnection(List<ConnectionAndStatus> connections, ConnectionStatus wantedConnectionStatus) {
         return connections.stream()
-            .filter(connectionAndStatus ->connectionAndStatus.getStatus().priority >= leastUsableConnection.priority)
+            .filter(connectionAndStatus ->connectionAndStatus.getStatus().priority >= wantedConnectionStatus.priority)
             .sorted((left, right) -> right.getStatus().priority.compareTo(left.getStatus().priority))
             .findFirst();
     }
 
-    private Optional<Connection> tryConnectingToHost(String host, String jdbcUrl, Properties info) {
+    private Optional<Connection> tryConnectingToHost(String host, String jdbcUrl, Properties info, Map<String, List<String>> queryParameters) {
         LOGGER.fine("Trying to connect to host " + host);
-        final URL originalUrl = URLHelpers.createURL(jdbcUrl);
-        final String connectUrl = URLHelpers.constructMysqlConnectUrl(originalUrl, host);
+        final String connectUrl = URLHelpers.constructMysqlConnectUrl(host, jdbcUrl, queryParameters);
         try {
             LOGGER.fine("Connecting to " + connectUrl);
             return Optional.of(openRealConnection(info, connectUrl));
@@ -135,11 +148,11 @@ public class MysclusconDriver implements Driver {
         }
     }
 
-    Connection createProxyConnection(final ConnectionChecker connectionChecker, Connection actualConnection, final ConnectionStatus leastUsableConnection) {
+    Connection createProxyConnection(final ConnectionChecker connectionChecker, Connection actualConnection, final ConnectionStatus wantedConnectionStatus) {
         return (Connection) Proxy.newProxyInstance(getClass().getClassLoader(), new Class[]{Connection.class}, (proxy, method, args) -> {
             switch(method.getName()) {
                 case "isValid":
-                    return connectionChecker.connectionStatus(actualConnection, (Integer) args[0]).priority >= leastUsableConnection.priority;
+                    return connectionChecker.connectionStatus(actualConnection, (Integer) args[0]).priority >= wantedConnectionStatus.priority;
                 default:
                     return method.invoke(actualConnection, args);
             }

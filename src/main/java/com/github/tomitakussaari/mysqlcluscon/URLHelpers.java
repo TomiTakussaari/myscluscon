@@ -6,15 +6,26 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 class URLHelpers {
 
-    static String constructMysqlConnectUrl(URL originalUrl, String host) {
+    static String constructMysqlConnectUrl(String host, String jdbcUrl, Map<String, List<String>> queryParameters) {
         final String protocol = "jdbc:mysql";
+        final URL originalUrl = createURL(jdbcUrl);
         final String port = originalUrl.getPort() != -1 ? ":"+originalUrl.getPort() : "";
         final String database = originalUrl.getPath();
-        final String queryParams = Optional.ofNullable(originalUrl.getQuery()).map(query -> "?"+query).orElse("");
-        return protocol+"://"+host+port+database+queryParams;
+        return protocol+"://"+host+port+database+toQueryParametersString(queryParameters);
+    }
+
+    static String toQueryParametersString(Map<String, List<String>> queryParameters) {
+        if(queryParameters.isEmpty()) {
+            return "";
+        }
+        return "?"+queryParameters.entrySet()
+                .stream()
+                .map(entry -> entry.getValue().stream().map(value -> entry.getKey()+"="+value).collect(Collectors.joining("&")))
+                .collect(Collectors.joining("&"));
     }
 
     static List<String> getHosts(String jdbcUrl) {

@@ -3,14 +3,27 @@ package com.github.tomitakussaari.mysqlcluscon;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
 public class URLHelpersTest {
+
+    @Test
+    public void toQueryParametersStringWithMultipleValues() {
+        Map<String, List<String>> queryParams = new TreeMap<>();
+        queryParams.put("foo", Arrays.asList("1", "2"));
+        queryParams.put("bar", Arrays.asList("3", "4"));
+        queryParams.put("foobar", Collections.singletonList("5"));
+        assertEquals("?bar=3&bar=4&foo=1&foo=2&foobar=5", URLHelpers.toQueryParametersString(queryParams));
+    }
+
+    @Test
+    public void toQueryParametersStringWithNoQueryParameters() {
+        Map<String, List<String>> queryParams = new TreeMap<>();
+        assertEquals("", URLHelpers.toQueryParametersString(queryParams));
+    }
 
     @Test
     public void parsesMultipleQueryParametersCorrectly() throws SQLException {
@@ -57,21 +70,21 @@ public class URLHelpersTest {
     }
 
     @Test
-    public void constructsMysqlConnectUrl() throws MalformedURLException {
-        URL url = new URL("http://this.part.is.ignored/database?foobar=true&barfoo=false");
-        assertEquals("jdbc:mysql://server.domain.fi/database?foobar=true&barfoo=false", URLHelpers.constructMysqlConnectUrl(url, "server.domain.fi"));
+    public void constructsMysqlConnectUrl() throws MalformedURLException, SQLException {
+        String url = "http://this.part.is.ignored/database?foobar=true&barfoo=false";
+        assertEquals("jdbc:mysql://server.domain.fi/database?foobar=true&barfoo=false", URLHelpers.constructMysqlConnectUrl("server.domain.fi", url, URLHelpers.getQueryParameters(url)));
     }
 
     @Test
-    public void constructsMysqlConnectUrlWithoutParams() throws MalformedURLException {
-        URL url = new URL("http://this.part.is.ignored/database");
-        assertEquals("jdbc:mysql://server.domain.fi/database", URLHelpers.constructMysqlConnectUrl(url, "server.domain.fi"));
+    public void constructsMysqlConnectUrlWithoutParams() throws MalformedURLException, SQLException {
+        String url = "http://this.part.is.ignored/database";
+        assertEquals("jdbc:mysql://server.domain.fi/database", URLHelpers.constructMysqlConnectUrl("server.domain.fi", url, URLHelpers.getQueryParameters(url)));
     }
 
     @Test
-    public void constructsMysqlConnectUrlWithDefinedPort() throws MalformedURLException {
-        URL url = new URL("http://this.part.is.ignored:12345/database?foobar=true&barfoo=false");
-        assertEquals("jdbc:mysql://server.domain.fi:12345/database?foobar=true&barfoo=false", URLHelpers.constructMysqlConnectUrl(url, "server.domain.fi"));
+    public void constructsMysqlConnectUrlWithDefinedPort() throws MalformedURLException, SQLException {
+        String url = "http://this.part.is.ignored:12345/database?foobar=true&barfoo=false";
+        assertEquals("jdbc:mysql://server.domain.fi:12345/database?foobar=true&barfoo=false", URLHelpers.constructMysqlConnectUrl("server.domain.fi", url, URLHelpers.getQueryParameters(url)));
     }
 
     @Test
@@ -79,7 +92,7 @@ public class URLHelpersTest {
         try {
             URLHelpers.createURL("foobar");
             fail("Should have failed");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getCause() instanceof MalformedURLException);
         }
     }

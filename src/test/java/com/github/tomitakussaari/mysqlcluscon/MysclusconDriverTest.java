@@ -29,17 +29,21 @@ public class MysclusconDriverTest {
 
     @Test
     public void galeraCluster() throws SQLException {
-        when(mockConn.createStatement()).thenReturn(mockStatement);
-        when(mockConn.isValid(anyInt())).thenReturn(true);
-        when(mockStatement.executeQuery("SHOW STATUS like 'wsrep_ready'")).thenReturn(mockResultSet);
-        when(mockResultSet.next()).thenReturn(true);
-        when(mockResultSet.getString("Value")).thenReturn("ON");
+        mockGaleraHealthChek();
 
         Connection connection = driver.connect("jdbc:myscluscon:galera:cluster://A,B,C", new Properties());
         assertNotNull(connection);
         assertTrue(connection.isValid(1));
 
         verifyConnectionIsUsable(connection);
+    }
+
+    private void mockGaleraHealthChek() throws SQLException {
+        when(mockConn.createStatement()).thenReturn(mockStatement);
+        when(mockConn.isValid(anyInt())).thenReturn(true);
+        when(mockStatement.executeQuery("SHOW STATUS like 'wsrep_ready'")).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(true);
+        when(mockResultSet.getString("Value")).thenReturn("ON");
     }
 
     private void verifyConnectionIsUsable(Connection connection) throws SQLException {
@@ -52,17 +56,12 @@ public class MysclusconDriverTest {
 
     @Test
     public void triesNodesUntilFindsWorkingOneWhenGalera() throws SQLException {
-        when(mockConn.createStatement()).thenReturn(mockStatement);
-        when(mockConn.isValid(anyInt())).thenReturn(false).thenReturn(false).thenReturn(true);
-
-        when(mockStatement.executeQuery("SHOW STATUS like 'wsrep_ready'")).thenReturn(mockResultSet);
-        when(mockResultSet.next()).thenReturn(false).thenReturn(false).thenReturn(true);
-        when(mockResultSet.getString("Value")).thenReturn("ON");
+        mockGaleraHealthChek();
 
         driver.connect("jdbc:myscluscon:galera:cluster://A,B,C:1234?foo=bar&bar=foo", new Properties());
-        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://A:1234?foo=bar&bar=foo"));
-        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://B:1234?foo=bar&bar=foo"));
-        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://C:1234?foo=bar&bar=foo"));
+        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://A:1234?foo=bar&bar=foo&connectTimeout=500"));
+        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://B:1234?foo=bar&bar=foo&connectTimeout=500"));
+        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://C:1234?foo=bar&bar=foo&connectTimeout=500"));
     }
 
     @Test
@@ -93,9 +92,9 @@ public class MysclusconDriverTest {
         when(mockResultSet.next()).thenReturn(true);
 
         driver.connect("jdbc:myscluscon:mysql:read_cluster://A,B,C:1234?foo=bar&bar=foo", new Properties());
-        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://A:1234?foo=bar&bar=foo"));
-        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://B:1234?foo=bar&bar=foo"));
-        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://C:1234?foo=bar&bar=foo"));
+        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://A:1234?foo=bar&bar=foo&connectTimeout=500"));
+        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://B:1234?foo=bar&bar=foo&connectTimeout=500"));
+        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://C:1234?foo=bar&bar=foo&connectTimeout=500"));
     }
 
     @Test
@@ -157,9 +156,9 @@ public class MysclusconDriverTest {
 
     @Test
     public void okConnectionIsPreferredOverAllOthers() throws SQLException {
-        mockConnection("jdbc:mysql://B:1234?foo=bar&bar=foo", "lagging", 3, true, true);
-        mockConnection("jdbc:mysql://A:1234?foo=bar&bar=foo", "valid", 0, true, true);
-        mockConnection("jdbc:mysql://C:1234?foo=bar&bar=foo", "broken", 0, false, true);
+        mockConnection("jdbc:mysql://B:1234?foo=bar&bar=foo&connectTimeout=500", "lagging", 3, true, true);
+        mockConnection("jdbc:mysql://A:1234?foo=bar&bar=foo&connectTimeout=500", "valid", 0, true, true);
+        mockConnection("jdbc:mysql://C:1234?foo=bar&bar=foo&connectTimeout=500", "broken", 0, false, true);
 
         Connection connection = configurableDriver.connect("jdbc:myscluscon:mysql:read_cluster://A,B,C:1234?foo=bar&bar=foo", new Properties());
         assertEquals("valid", connection.toString());
@@ -167,9 +166,9 @@ public class MysclusconDriverTest {
 
     @Test
     public void laggingConnectionIsPreferredOverStopped() throws SQLException {
-        mockConnection("jdbc:mysql://B:1234?foo=bar&bar=foo", "lagging", 3, true, true);
-        mockConnection("jdbc:mysql://A:1234?foo=bar&bar=foo", "stopped", 0, true, false);
-        mockConnection("jdbc:mysql://C:1234?foo=bar&bar=foo", "broken", 0, false, true);
+        mockConnection("jdbc:mysql://B:1234?foo=bar&bar=foo&connectTimeout=500", "lagging", 3, true, true);
+        mockConnection("jdbc:mysql://A:1234?foo=bar&bar=foo&connectTimeout=500", "stopped", 0, true, false);
+        mockConnection("jdbc:mysql://C:1234?foo=bar&bar=foo&connectTimeout=500", "broken", 0, false, true);
 
         Connection connection = configurableDriver.connect("jdbc:myscluscon:mysql:read_cluster://A,B,C:1234?foo=bar&bar=foo", new Properties());
         assertEquals("lagging", connection.toString());
@@ -185,9 +184,9 @@ public class MysclusconDriverTest {
 
     @Test
     public void returnsConnectionWithStatusEqualOrAboveWanted() throws SQLException {
-        mockConnection("jdbc:mysql://B:1234?foo=bar&bar=foo&connectionStatus=behind", "lagging", 3, true, true);
-        mockConnection("jdbc:mysql://A:1234?foo=bar&bar=foo&connectionStatus=behind", "stopped", 0, true, false);
-        mockConnection("jdbc:mysql://C:1234?foo=bar&bar=foo&connectionStatus=behind", "broken", 0, false, true);
+        mockConnection("jdbc:mysql://B:1234?foo=bar&bar=foo&connectionStatus=behind&connectTimeout=500", "lagging", 3, true, true);
+        mockConnection("jdbc:mysql://A:1234?foo=bar&bar=foo&connectionStatus=behind&connectTimeout=500", "stopped", 0, true, false);
+        mockConnection("jdbc:mysql://C:1234?foo=bar&bar=foo&connectionStatus=behind&connectTimeout=500", "broken", 0, false, true);
 
         Connection connection = configurableDriver.connect("jdbc:myscluscon:mysql:read_cluster://A,B,C:1234?foo=bar&bar=foo&connectionStatus=behind", new Properties());
         assertEquals("lagging", connection.toString());
@@ -195,8 +194,8 @@ public class MysclusconDriverTest {
 
     @Test
     public void stoppedConnectionIsPreferredOverDead() throws SQLException {
-        mockConnection("jdbc:mysql://A:1234?foo=bar&bar=foo", "stopped", 0, true, false);
-        mockConnection("jdbc:mysql://C:1234?foo=bar&bar=foo", "broken", 0, false, true);
+        mockConnection("jdbc:mysql://A:1234?foo=bar&bar=foo&connectTimeout=500", "stopped", 0, true, false);
+        mockConnection("jdbc:mysql://C:1234?foo=bar&bar=foo&connectTimeout=500", "broken", 0, false, true);
 
         Connection connection = configurableDriver.connect("jdbc:myscluscon:mysql:read_cluster://A,B,C:1234?foo=bar&bar=foo", new Properties());
         assertEquals("stopped", connection.toString());
@@ -295,6 +294,25 @@ public class MysclusconDriverTest {
 
         Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections, ConnectionStatus.STOPPED);
         assertFalse(bestConnection.toString(), bestConnection.isPresent());
+    }
+
+    @Test
+    public void setsConnectTimeoutWhenNotSpecified() throws SQLException {
+        mockGaleraHealthChek();
+
+        driver.connect("jdbc:myscluscon:galera:cluster://A:1234?foo=bar&bar=foo", new Properties());
+        String actualUrl = driver.connectUrls.get(0);
+        assertEquals("jdbc:mysql://A:1234?foo=bar&bar=foo&connectTimeout=500", actualUrl);
+    }
+
+    @Test
+    public void usesConnectTimeoutFromUrlWhenGiven() throws SQLException {
+        mockGaleraHealthChek();
+
+        driver.connect("jdbc:myscluscon:galera:cluster://A:1234?foo=bar&bar=foo&connectTimeout=1500", new Properties());
+        String actualUrl = driver.connectUrls.get(0);
+        assertEquals("jdbc:mysql://A:1234?foo=bar&bar=foo&connectTimeout=1500", actualUrl);
+
     }
 
     class TestableMysqlclusconDriver extends MysclusconDriver {
