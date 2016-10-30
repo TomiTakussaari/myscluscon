@@ -39,7 +39,9 @@ class URLHelpers {
 
     static URL createURL(String jdbcUrl) {
         try {
-            //Hacky but it feels simpler than alternatives, as Java URL only supports certain protocols, so protocol is "changed" here to make URL work..
+            //hackiness warning:
+            //Java URL by default supports only certain protocols, so protocol is "changed" here to make URL work.
+            //we could implement our own URLStreamHandler, but that would then be much more code...
             return new URL(jdbcUrl.replace(MysclusconDriver.galeraClusterConnectorName, "http")
                     .replace(MysclusconDriver.mysqlReadClusterConnectorName, "http"));
         } catch (MalformedURLException e) {
