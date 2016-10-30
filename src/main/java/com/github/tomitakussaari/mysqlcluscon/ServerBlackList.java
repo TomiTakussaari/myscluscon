@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 class ServerBlackList {
 
     private static final long blackListTimeInMs = 2 * 60 * 1000;
-    private final Map<String, Long> hostsAndBlackListTimes = new ConcurrentHashMap<>();
+    private final Map<String, Long> serversAndBlackListTimes = new ConcurrentHashMap<>();
 
     private final Supplier<Long> nowSupplier;
 
@@ -21,21 +21,21 @@ class ServerBlackList {
         this.nowSupplier = nowSupplier;
     }
 
-    void blackList(String host) {
-        hostsAndBlackListTimes.put(host, nowSupplier.get());
+    void blackList(String server) {
+        serversAndBlackListTimes.put(server, nowSupplier.get());
     }
 
-    List<String> filterOutBlacklisted(List<String> allHosts) {
+    List<String> filterOutBlacklisted(List<String> allServers) {
         purgeOldEntries();
-        return allHosts.stream()
-                .filter(host -> !hostsAndBlackListTimes.containsKey(host))
+        return allServers.stream()
+                .filter(server -> !serversAndBlackListTimes.containsKey(server))
                 .collect(Collectors.toList());
     }
 
     private void purgeOldEntries() {
-        hostsAndBlackListTimes.entrySet()
+        serversAndBlackListTimes.entrySet()
                 .stream()
                 .filter(entry -> entry.getValue() + blackListTimeInMs < nowSupplier.get())
-                .forEach(entry -> hostsAndBlackListTimes.remove(entry.getKey()));
+                .forEach(entry -> serversAndBlackListTimes.remove(entry.getKey()));
     }
 }
