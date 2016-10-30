@@ -149,14 +149,21 @@ public class MysclusconDriverTest {
     }
 
     @Test
-    public void isNotJdbcCompliant() {
-        assertFalse(driver.jdbcCompliant());
+    public void isNotJdbcCompliantWorksSameAsMysql() throws SQLException {
+        com.mysql.jdbc.Driver mysqlDriver = new com.mysql.jdbc.Driver();
+        assertEquals(mysqlDriver.jdbcCompliant(), driver.jdbcCompliant());
     }
 
     @Test
     public void version() {
         assertEquals(1, driver.getMajorVersion());
         assertEquals(0, driver.getMinorVersion());
+    }
+
+    @Test
+    public void getPropertyInfoIsNotReallySupported() throws SQLException {
+        //we do not support it for now atleast
+        assertEquals(0, driver.getPropertyInfo("", null).length);
     }
 
     @Test
@@ -226,7 +233,7 @@ public class MysclusconDriverTest {
         when(mockResultSet.getInt("Seconds_Behind_Master")).thenReturn(secondsBehindMaster);
         when(mockResultSet.next()).thenReturn(true);
 
-        configurableDriver.connectUrls.put(url, () -> connection);
+        expectConnection(url, () -> connection);
         return connection;
     }
 
@@ -322,7 +329,7 @@ public class MysclusconDriverTest {
 
     @Test
     public void skipsServersThatAreDownFromSubsequentConnectionAttempts() throws SQLException {
-        configurableDriver.connectUrls.put("jdbc:mysql://A:1234?connectTimeout=500", () -> {
+        expectConnection("jdbc:mysql://A:1234?connectTimeout=500", () -> {
             throw new RuntimeException("Cannot open connection");
         });
         expectConnection("jdbc:mysql://B:1234?connectTimeout=500", "valid", 0, true, true);
@@ -338,8 +345,13 @@ public class MysclusconDriverTest {
         assertEquals(configurableDriver.connectUrls.toString(), 0, configurableDriver.connectUrls.size());
     }
 
+    private void expectConnection(String key, Supplier<Connection> connectionSupplier) {
+        configurableDriver.connectUrls.put(key, connectionSupplier);
+    }
+
     class ConnectURLStoringDriver extends MysclusconDriver {
         final List<String> connectUrls = new ArrayList<>();
+
         @Override
         protected Connection openRealConnection(Properties info, String connectUrl) throws SQLException {
             connectUrls.add(connectUrl);
@@ -349,6 +361,7 @@ public class MysclusconDriverTest {
 
     static class ConnectionExpectingDriver extends MysclusconDriver {
         final Map<String, Supplier<Connection>> connectUrls = new HashMap<>();
+
         @Override
         protected Connection openRealConnection(Properties info, String connectUrl) throws SQLException {
             return connectUrls.remove(connectUrl).get();
