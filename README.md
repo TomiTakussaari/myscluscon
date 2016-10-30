@@ -31,7 +31,7 @@ JDBC Driver for always connecting to valid server in your (Mysql) Galera or read
     <dependency>
         <groupId>com.github.tomitakussaari</groupId>
         <artifactId>myscluscon-driver</artifactId>
-        <version>0.2.0</version>
+        <version>3.0.0</version>
     </dependency>
 
 ## Usage example with standard JDBC
