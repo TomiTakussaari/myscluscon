@@ -46,6 +46,12 @@ JDBC Driver for always connecting to valid server in your Galera or MariaDb/Mysq
 
 All queryparameters are passed untouched to jdbc:mysql driver
 
+## Database privileges
+
+In addition to privileges needed by your business logic, myscluscon reed-cluster mode needs ```REPLICATION CLIENT``` privilege, as it needs to run ```SHOW SLAVE STATUS``` query to check slave status.
+
+In Galera mode, myscluscon needs to just issue ```SHOW STATUS``` query, which does require any extra privileges.
+
 ### Configuration
 
 Following queryparameters can be used to configure myscluscon:
