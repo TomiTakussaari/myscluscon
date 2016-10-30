@@ -10,6 +10,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.github.tomitakussaari.mysqlcluscon.Params.DEFAULT_CONNECT_TIMEOUT_IN_MS;
 import static com.github.tomitakussaari.mysqlcluscon.Params.MYSQL_CONNECT_TIMEOUT_PARAM;
@@ -97,8 +98,7 @@ public class MysclusconDriver implements Driver {
         List<ConnectionAndStatus> connections = null;
         try {
             connections = hosts.stream()
-                    .map(host -> tryConnectingToHost(host, jdbcUrl, info, queryParameters))
-                    .filter(Optional::isPresent).map(Optional::get)
+                    .flatMap(host -> tryConnectingToHost(host, jdbcUrl, info, queryParameters))
                     .map(conn -> new ConnectionAndStatus(conn, connectionChecker))
                     .collect(Collectors.toList());
             return findAndRemoveBestConnection(connections, wantedConnectionStatus);
@@ -122,17 +122,17 @@ public class MysclusconDriver implements Driver {
             .findFirst();
     }
 
-    private Optional<Connection> tryConnectingToHost(String host, String jdbcUrl, Properties info, Map<String, List<String>> queryParameters) {
+    private Stream<Connection> tryConnectingToHost(String host, String jdbcUrl, Properties info, Map<String, List<String>> queryParameters) {
         LOGGER.fine(() -> "Trying to connect to host " + host);
         final String connectUrl = URLHelpers.constructMysqlConnectUrl(host, jdbcUrl, queryParameters);
         try {
             LOGGER.fine(() -> "Connecting to " + connectUrl);
-            return Optional.of(openRealConnection(info, connectUrl));
+            return Stream.of(openRealConnection(info, connectUrl));
         } catch(Exception e) {
             serverBlackList.blackList(host);
             LOGGER.info(() -> "Error while opening connection " + connectUrl + " " + e.getMessage());
+            return Stream.empty();
         }
-        return Optional.empty();
     }
 
 
