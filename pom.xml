@@ -6,7 +6,7 @@
 
     <groupId>com.github.tomitakussaari</groupId>
     <artifactId>myscluscon-driver</artifactId>
-    <version>3.0</version>
+    <version>3.1-SNAPSHOT</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>JDBC Driver for always connecting to valid server in your Mariadb/Mysql/Galera cluster</description>
