@@ -19,7 +19,7 @@ public class ReadClusterConnectionChecker implements ConnectionChecker {
     private static final Logger LOGGER = Logger.getLogger(ReadClusterConnectionChecker.class.getName());
     private final int maxSlaveLag;
 
-    public ReadClusterConnectionChecker(int maxSlaveLag) {
+    ReadClusterConnectionChecker(int maxSlaveLag) {
         this.maxSlaveLag = maxSlaveLag;
     }
 

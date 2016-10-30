@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 public class MysclusconDriver implements Driver {
 
-    static final Logger LOGGER = Logger.getLogger(MysclusconDriver.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(MysclusconDriver.class.getName());
 
     static {
         try {
@@ -22,8 +22,8 @@ public class MysclusconDriver implements Driver {
         }
     }
 
-    public static final String mysqlReadClusterConnectorName = "jdbc:myscluscon:mysql:read_cluster";
-    public static final String galeraClusterConnectorName = "jdbc:myscluscon:galera:cluster";
+    static final String mysqlReadClusterConnectorName = "jdbc:myscluscon:mysql:read_cluster";
+    static final String galeraClusterConnectorName = "jdbc:myscluscon:galera:cluster";
 
     @Override
     public Connection connect(String jdbcUrl, Properties info) throws SQLException {
@@ -135,7 +135,7 @@ public class MysclusconDriver implements Driver {
         }
     }
 
-    protected Connection createProxyConnection(final ConnectionChecker connectionChecker, Connection actualConnection, final ConnectionStatus leastUsableConnection) {
+    Connection createProxyConnection(final ConnectionChecker connectionChecker, Connection actualConnection, final ConnectionStatus leastUsableConnection) {
         return (Connection) Proxy.newProxyInstance(getClass().getClassLoader(), new Class[]{Connection.class}, (proxy, method, args) -> {
             switch(method.getName()) {
                 case "isValid":

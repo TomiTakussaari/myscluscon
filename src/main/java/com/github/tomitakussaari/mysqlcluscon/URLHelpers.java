@@ -7,7 +7,7 @@ import java.net.URLDecoder;
 import java.sql.SQLException;
 import java.util.*;
 
-public class URLHelpers {
+class URLHelpers {
 
     static String constructMysqlConnectUrl(URL originalUrl, String host) {
         final String protocol = "jdbc:mysql";
@@ -29,14 +29,15 @@ public class URLHelpers {
     static URL createURL(String jdbcUrl) {
         try {
             //Hacky but it feels simpler than alternatives, as Java URL only supports certain protocols, so protocol is "changed" here to make URL work..
-            return new URL(jdbcUrl.replace(MysclusconDriver.galeraClusterConnectorName, "http").replace(MysclusconDriver.mysqlReadClusterConnectorName, "http"));
+            return new URL(jdbcUrl.replace(MysclusconDriver.galeraClusterConnectorName, "http")
+                    .replace(MysclusconDriver.mysqlReadClusterConnectorName, "http"));
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static String getParameter(Map<String, List<String>> queryParameters, String parameter, String defaultValue) {
-        return queryParameters.getOrDefault(parameter, new ArrayList<>()).stream().findFirst().orElse(defaultValue.toString());
+    static String getParameter(Map<String, List<String>> queryParameters, String parameter, String defaultValue) {
+        return queryParameters.getOrDefault(parameter, new ArrayList<>()).stream().findFirst().orElse(defaultValue);
     }
 
     static Map<String, List<String>> getQueryParameters(String url) throws SQLException {
@@ -49,7 +50,9 @@ public class URLHelpers {
 
     }
 
-    private static Map<String, List<String>> parseQueryParameters(String url, Map<String, List<String>> queryParameters, int startOfQueryParams) throws SQLException {
+    private static Map<String, List<String>> parseQueryParameters(String url,
+                                                                  Map<String, List<String>> queryParameters,
+                                                                  int startOfQueryParams) throws SQLException {
         final String[] pairs = url.substring(startOfQueryParams).split("&");
         for (String pair : pairs) {
             final int idx = pair.indexOf("=");
@@ -61,7 +64,7 @@ public class URLHelpers {
         return queryParameters;
     }
 
-    static String decode(String substring) throws SQLException {
+    private static String decode(String substring) throws SQLException {
         try {
             return URLDecoder.decode(substring, "UTF-8");
         } catch (UnsupportedEncodingException e) {

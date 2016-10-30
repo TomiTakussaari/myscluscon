@@ -8,7 +8,7 @@ class ConnectionAndStatus {
     private final ConnectionChecker checker;
     private ConnectionStatus status;
 
-    public ConnectionStatus getStatus() {
+    ConnectionStatus getStatus() {
         if(status == null) {
             status = checker.connectionStatus(connection);
         }
@@ -20,7 +20,7 @@ class ConnectionAndStatus {
         this.checker = checker;
     }
 
-    public void close() {
+    void close() {
         try {
             connection.close();
         } catch(SQLException e) {
