@@ -44,11 +44,11 @@ JDBC Driver for always connecting to valid server in your Galera or MariaDb/Mysq
     //Connection to any valid server in galera cluster consisting of serverOne, serverTwo or serverThree
     Connection connection = DriverManager.getConnection("jdbc:myscluscon:galera:cluster://serverOne,serverTwo,serverThree", "username", "password");
 
-All queryparameters are passed on untouched
+All queryparameters are passed untouched to jdbc:mysql driver
 
 ### Configuration
 
-Following queryparameters are supported:
+Following queryparameters can be used to configure myscluscon:
 
     - maxSlaveLag=<max amount of seconds slave can be behind master to be considered OK>
        - If over this value, slave will be considered BEHIND. 
