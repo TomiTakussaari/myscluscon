@@ -7,15 +7,15 @@ import java.net.URLDecoder;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 class URLHelpers {
 
-    static String constructMysqlConnectUrl(String host, String jdbcUrl, Map<String, List<String>> queryParameters) {
+    static String constructMysqlConnectUrl(String server, String jdbcUrl, Map<String, List<String>> queryParameters) {
         final String protocol = "jdbc:mysql";
         final URL originalUrl = createURL(jdbcUrl);
-        final String port = originalUrl.getPort() != -1 ? ":"+originalUrl.getPort() : "";
         final String database = originalUrl.getPath();
-        return protocol+"://"+host+port+database+toQueryParametersString(queryParameters);
+        return protocol+"://"+server+database+toQueryParametersString(queryParameters);
     }
 
     static String toQueryParametersString(Map<String, List<String>> queryParameters) {
@@ -28,9 +28,10 @@ class URLHelpers {
                 .collect(Collectors.joining("&"));
     }
 
-    static List<String> getHosts(String jdbcUrl) {
+    static List<String> getServers(String jdbcUrl) {
         URL url = createURL(jdbcUrl);
-        return Arrays.asList(url.getHost().split(","));
+        int port = url.getPort() <= 0 ? 3306 : url.getPort();
+        return Stream.of(url.getHost().split(",")).map(host -> host+":"+port).collect(Collectors.toList());
     }
 
     static String getProtocol(String jdbcUrl) {

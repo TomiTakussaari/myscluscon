@@ -60,13 +60,13 @@ public class URLHelpersTest {
     }
 
     @Test
-    public void parsesSingleHostFromUrl() throws MalformedURLException {
-        assertEquals("[serverOne]", URLHelpers.getHosts("jdbc:myscluscon:mysql:read_cluster://serverOne/database").toString());
+    public void parsesSingleServerFromUrl() throws MalformedURLException {
+        assertEquals("[serverOne:3306]", URLHelpers.getServers("jdbc:myscluscon:mysql:read_cluster://serverOne/database").toString());
     }
 
     @Test
-    public void parsesMultipleHostsWithPortsFromUrl() throws MalformedURLException {
-        assertEquals("[serverOne, serverTwo, ServerThree]", URLHelpers.getHosts("jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,ServerThree:2134/database").toString());
+    public void parsesMultipleServersWithPortsFromUrl() throws MalformedURLException {
+        assertEquals("[serverOne:2134, serverTwo:2134, ServerThree:2134]", URLHelpers.getServers("jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,ServerThree:2134/database").toString());
     }
 
     @Test
@@ -84,7 +84,7 @@ public class URLHelpersTest {
     @Test
     public void constructsMysqlConnectUrlWithDefinedPort() throws MalformedURLException, SQLException {
         String url = "http://this.part.is.ignored:12345/database?foobar=true&barfoo=false";
-        assertEquals("jdbc:mysql://server.domain.fi:12345/database?foobar=true&barfoo=false", URLHelpers.constructMysqlConnectUrl("server.domain.fi", url, URLHelpers.getQueryParameters(url)));
+        assertEquals("jdbc:mysql://server.domain.fi:12345/database?foobar=true&barfoo=false", URLHelpers.constructMysqlConnectUrl("server.domain.fi:12345", url, URLHelpers.getQueryParameters(url)));
     }
 
     @Test

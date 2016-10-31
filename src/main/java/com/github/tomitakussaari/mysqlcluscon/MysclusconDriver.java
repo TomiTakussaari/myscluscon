@@ -83,22 +83,22 @@ public class MysclusconDriver implements Driver {
     }
 
     private Connection createActualConnection(String jdbcUrl, ConnectionChecker connectionChecker, Properties info, ConnectionStatus leastUsableConnection, Map<String, List<String>> queryParameters) throws SQLException {
-        final List<String> hosts = serverBlackList.filterOutBlacklisted(URLHelpers.getHosts(jdbcUrl));
-        return tryToOpenConnectionToValidHost(hosts, connectionChecker, info, jdbcUrl, leastUsableConnection, queryParameters)
-                .orElseThrow(() -> new SQLException("Unable to open connection, no valid host found from hosts: " + hosts));
+        final List<String> servers = serverBlackList.filterOutBlacklisted(URLHelpers.getServers(jdbcUrl));
+        return tryToOpenConnectionToValidServer(servers, connectionChecker, info, jdbcUrl, leastUsableConnection, queryParameters)
+                .orElseThrow(() -> new SQLException("Unable to open connection, no valid host found from servers: " + servers));
     }
 
-    private Optional<Connection> tryToOpenConnectionToValidHost(List<String> hosts, ConnectionChecker connectionChecker,
+    private Optional<Connection> tryToOpenConnectionToValidServer(List<String> servers, ConnectionChecker connectionChecker,
                                                                 Properties info, String jdbcUrl,
                                                                 ConnectionStatus wantedConnectionStatus,
                                                                 Map<String, List<String>> queryParameters) throws SQLException {
-        LOGGER.fine(() -> "Trying to connect to hosts " + hosts + " from url " + jdbcUrl);
-        Collections.shuffle(hosts);
+        LOGGER.fine(() -> "Trying to connect to servers " + servers + " from url " + jdbcUrl);
+        Collections.shuffle(servers);
 
         List<ConnectionAndStatus> connections = null;
         try {
-            connections = hosts.stream()
-                    .flatMap(host -> tryConnectingToHost(host, jdbcUrl, info, queryParameters))
+            connections = servers.stream()
+                    .flatMap(server -> tryConnectingToHost(server, jdbcUrl, info, queryParameters))
                     .map(conn -> new ConnectionAndStatus(conn, connectionChecker))
                     .collect(Collectors.toList());
             return findAndRemoveBestConnection(connections, wantedConnectionStatus);
@@ -122,14 +122,14 @@ public class MysclusconDriver implements Driver {
             .findFirst();
     }
 
-    private Stream<Connection> tryConnectingToHost(String host, String jdbcUrl, Properties info, Map<String, List<String>> queryParameters) {
-        LOGGER.fine(() -> "Trying to connect to host " + host);
-        final String connectUrl = URLHelpers.constructMysqlConnectUrl(host, jdbcUrl, queryParameters);
+    private Stream<Connection> tryConnectingToHost(String server, String jdbcUrl, Properties info, Map<String, List<String>> queryParameters) {
+        LOGGER.fine(() -> "Trying to connect to host " + server);
+        final String connectUrl = URLHelpers.constructMysqlConnectUrl(server, jdbcUrl, queryParameters);
         try {
             LOGGER.fine(() -> "Connecting to " + connectUrl);
             return Stream.of(openRealConnection(info, connectUrl));
         } catch(Exception e) {
-            serverBlackList.blackList(host);
+            serverBlackList.blackList(server);
             LOGGER.info(() -> "Error while opening connection " + connectUrl + " " + e.getMessage());
             return Stream.empty();
         }
@@ -168,4 +168,8 @@ public class MysclusconDriver implements Driver {
         ).orElse(ConnectionStatus.STOPPED);
     }
 
+
+    Collection<String> blackListedServers() {
+        return serverBlackList.blackListed();
+    }
 }

@@ -111,7 +111,7 @@ public class MysclusconDriverTest {
             driver.connect("jdbc:myscluscon:mysql:read_cluster://A:1234?foo=bar&bar=foo", new Properties());
             fail("Should not have passed");
         } catch (SQLException e) {
-            assertEquals("Unable to open connection, no valid host found from hosts: [A]", e.getMessage());
+            assertEquals("Unable to open connection, no valid host found from servers: [A:1234]", e.getMessage());
         }
         verify(mockConn).close();
     }
@@ -343,6 +343,8 @@ public class MysclusconDriverTest {
         configurableDriver.connect("jdbc:myscluscon:mysql:read_cluster://A,B,C:1234", new Properties());
 
         assertEquals(configurableDriver.connectUrls.toString(), 0, configurableDriver.connectUrls.size());
+
+        assertEquals("A:1234", configurableDriver.blackListedServers().iterator().next());
     }
 
     private void expectConnection(String key, Supplier<Connection> connectionSupplier) {
