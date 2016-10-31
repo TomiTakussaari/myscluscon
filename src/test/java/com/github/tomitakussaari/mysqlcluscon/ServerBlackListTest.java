@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 public class ServerBlackListTest {
@@ -22,12 +23,20 @@ public class ServerBlackListTest {
     }
 
     @Test
-    public void filtersOutBlacklistedHosts() {
+    public void filtersOutBlacklistedServers() {
         when(nowSupplier.get()).thenReturn(System.currentTimeMillis());
         serverBlackList.blackList("server1.fi:3306");
         List<String> filteredList = serverBlackList.filterOutBlacklisted(Arrays.asList("server1.fi:3306", "server1.fi:3307"));
         assertEquals(1, filteredList.size());
         assertEquals("server1.fi:3307", filteredList.get(0));
+    }
+
+    @Test
+    public void returnsCurrentlyBlacklistedServers() {
+        when(nowSupplier.get()).thenReturn(System.currentTimeMillis());
+        assertTrue(serverBlackList.blackListed().isEmpty());
+        serverBlackList.blackList("server1.fi:3306");
+        assertTrue(serverBlackList.blackListed().contains("server1.fi:3306"));
     }
 
     @Test

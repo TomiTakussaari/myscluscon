@@ -40,7 +40,7 @@ class ServerBlackList {
                 .forEach(entry -> serversAndBlackListTimes.remove(entry.getKey()));
     }
 
-    public Set<String> blackListed() {
+    Set<String> blackListed() {
         purgeOldEntries();
         return serversAndBlackListTimes.keySet();
     }
