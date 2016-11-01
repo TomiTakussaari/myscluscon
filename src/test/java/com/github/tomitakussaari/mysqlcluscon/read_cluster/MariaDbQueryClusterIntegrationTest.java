@@ -12,7 +12,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class MariaDbQueryClusterIT {
+public class MariaDbQueryClusterIntegrationTest {
 
     private static List<DB> dbs = new ArrayList<>();
     private static DBConfigurationBuilder master;

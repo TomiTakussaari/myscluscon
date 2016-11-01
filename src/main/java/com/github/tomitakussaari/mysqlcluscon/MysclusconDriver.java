@@ -2,10 +2,8 @@ package com.github.tomitakussaari.mysqlcluscon;
 
 import com.github.tomitakussaari.mysqlcluscon.galera.GaleraClusterConnectionChecker;
 import com.github.tomitakussaari.mysqlcluscon.read_cluster.ReadClusterConnectionChecker;
-import com.mysql.fabric.Server;
 
 import java.lang.reflect.Proxy;
-import java.net.URL;
 import java.sql.*;
 import java.util.*;
 import java.util.logging.Logger;
@@ -35,11 +33,11 @@ public class MysclusconDriver implements Driver {
     @Override
     public Connection connect(String jdbcUrl, Properties info) throws SQLException {
         if(acceptsURL(jdbcUrl)) {
-            final Map<String, List<String>> queryParameters = URLHelpers.getQueryParameters(jdbcUrl);
-            validateQueryParameters(queryParameters, jdbcUrl);
-            final ConnectionStatus wantedConnectionStatus = getWantedConnectionStatus(queryParameters);
-            final ConnectionChecker connectionChecker = chooseConnectionChecker(jdbcUrl, queryParameters);
-            return createProxyConnection(connectionChecker, createActualConnection(jdbcUrl, connectionChecker, info, wantedConnectionStatus, queryParameters), wantedConnectionStatus);
+            URLHelpers.URLInfo connectUrl = URLHelpers.parse(jdbcUrl);
+            validateQueryParameters(connectUrl.queryParameters, jdbcUrl);
+            final ConnectionStatus wantedConnectionStatus = getWantedConnectionStatus(connectUrl.queryParameters);
+            final ConnectionChecker connectionChecker = chooseConnectionChecker(connectUrl, connectUrl.queryParameters);
+            return createProxyConnection(connectionChecker, createActualConnection(connectUrl, connectionChecker, info, wantedConnectionStatus), wantedConnectionStatus);
         } else {
             return null;
         }
@@ -82,23 +80,22 @@ public class MysclusconDriver implements Driver {
         return LOGGER;
     }
 
-    private Connection createActualConnection(String jdbcUrl, ConnectionChecker connectionChecker, Properties info, ConnectionStatus leastUsableConnection, Map<String, List<String>> queryParameters) throws SQLException {
-        final List<String> servers = serverBlackList.filterOutBlacklisted(URLHelpers.getServers(jdbcUrl));
-        return tryToOpenConnectionToValidServer(servers, connectionChecker, info, jdbcUrl, leastUsableConnection, queryParameters)
+    private Connection createActualConnection(URLHelpers.URLInfo jdbcUrl, ConnectionChecker connectionChecker, Properties info, ConnectionStatus leastUsableConnection) throws SQLException {
+        final List<String> servers = serverBlackList.filterOutBlacklisted(jdbcUrl.servers);
+        return tryToOpenConnectionToValidServer(servers, connectionChecker, info, jdbcUrl, leastUsableConnection)
                 .orElseThrow(() -> new SQLException("Unable to open connection, no valid host found from servers: " + servers));
     }
 
     private Optional<Connection> tryToOpenConnectionToValidServer(List<String> servers, ConnectionChecker connectionChecker,
-                                                                Properties info, String jdbcUrl,
-                                                                ConnectionStatus wantedConnectionStatus,
-                                                                Map<String, List<String>> queryParameters) throws SQLException {
+                                                                Properties info, URLHelpers.URLInfo jdbcUrl,
+                                                                ConnectionStatus wantedConnectionStatus) throws SQLException {
         LOGGER.fine(() -> "Trying to connect to servers " + servers + " from url " + jdbcUrl);
         Collections.shuffle(servers);
 
         List<ConnectionAndStatus> connections = null;
         try {
             connections = servers.stream()
-                    .flatMap(server -> tryConnectingToHost(server, jdbcUrl, info, queryParameters))
+                    .flatMap(server -> tryConnectingToHost(server, jdbcUrl, info))
                     .map(conn -> new ConnectionAndStatus(conn, connectionChecker))
                     .collect(Collectors.toList());
             return findAndRemoveBestConnection(connections, wantedConnectionStatus);
@@ -122,9 +119,9 @@ public class MysclusconDriver implements Driver {
             .findFirst();
     }
 
-    private Stream<Connection> tryConnectingToHost(String server, String jdbcUrl, Properties info, Map<String, List<String>> queryParameters) {
+    private Stream<Connection> tryConnectingToHost(String server, URLHelpers.URLInfo jdbcUrl, Properties info) {
         LOGGER.fine(() -> "Trying to connect to host " + server);
-        final String connectUrl = URLHelpers.constructMysqlConnectUrl(server, jdbcUrl, queryParameters);
+        final String connectUrl = jdbcUrl.asJdbcConnectUrl(server);
         try {
             LOGGER.fine(() -> "Connecting to " + connectUrl);
             return Stream.of(openRealConnection(info, connectUrl));
@@ -141,13 +138,12 @@ public class MysclusconDriver implements Driver {
     }
 
 
-    private ConnectionChecker chooseConnectionChecker(String jdbcUrl, Map<String, List<String>> queryParameters) {
-        String protocol = URLHelpers.getProtocol(jdbcUrl);
-        LOGGER.fine(() -> "Parsed Protocol: " + protocol + " from url" + jdbcUrl);
-        switch (protocol) {
+    private ConnectionChecker chooseConnectionChecker(URLHelpers.URLInfo jdbcUrl, Map<String, List<String>> queryParameters) {
+        LOGGER.fine(() -> "Parsed Protocol: " + jdbcUrl.protocol + " from url" + jdbcUrl);
+        switch (jdbcUrl.protocol) {
             case mysqlReadClusterConnectorName: return new ReadClusterConnectionChecker(queryParameters);
             case galeraClusterConnectorName:    return new GaleraClusterConnectionChecker();
-            default:                            throw new UnsupportedOperationException("Unsupported protocol: "+protocol);
+            default:                            throw new UnsupportedOperationException("Unsupported protocol: "+jdbcUrl.protocol);
         }
     }
 

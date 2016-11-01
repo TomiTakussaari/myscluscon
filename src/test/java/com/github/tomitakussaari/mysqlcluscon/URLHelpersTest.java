@@ -27,7 +27,7 @@ public class URLHelpersTest {
 
     @Test
     public void parsesMultipleQueryParametersCorrectly() throws SQLException {
-        Map<String, List<String>> queryParameters = URLHelpers.getQueryParameters("jdbc:mysql://server.domain.fi/database?foobar=true&barfoo=false");
+        Map<String, List<String>> queryParameters = URLHelpers.parse("jdbc:mysql://server.domain.fi/database?foobar=true&barfoo=false").queryParameters;
         assertEquals("[true]", queryParameters.get("foobar").toString());
         assertEquals("[false]", queryParameters.get("barfoo").toString());
     }
@@ -40,62 +40,55 @@ public class URLHelpersTest {
 
     @Test
     public void parsesSingleQueryParameterCorrectly() throws SQLException {
-        Map<String, List<String>> queryParameters = URLHelpers.getQueryParameters("jdbc:mysql://server.domain.fi/database?foobar=true");
+        Map<String, List<String>> queryParameters = URLHelpers.parse("jdbc:mysql://server.domain.fi/database?foobar=true").queryParameters;
         assertEquals("[true]", queryParameters.get("foobar").toString());
     }
 
     @Test
     public void parsesMultipleQueryParametersForSameKey() throws SQLException {
-        Map<String, List<String>> queryParameters = URLHelpers.getQueryParameters("jdbc:mysql://server.domain.fi/database?foobar=bar&foobar=foo");
+        Map<String, List<String>> queryParameters = URLHelpers.parse("jdbc:mysql://server.domain.fi/database?foobar=bar&foobar=foo").queryParameters;
         assertTrue(queryParameters.get("foobar").contains("bar"));
         assertTrue(queryParameters.get("foobar").contains("foo"));
     }
 
     @Test
     public void valueLessQueryParam() throws SQLException {
-        Map<String, List<String>> queryParameters = URLHelpers.getQueryParameters("jdbc:mysql://server.domain.fi/database?foobar");
+        Map<String, List<String>> queryParameters = URLHelpers.parse("jdbc:mysql://server.domain.fi/database?foobar").queryParameters;
         assertTrue(queryParameters.containsKey("foobar"));
         assertEquals(1, queryParameters.get("foobar").size());
         assertEquals(null, queryParameters.get("foobar").get(0));
     }
 
     @Test
-    public void parsesSingleServerFromUrl() throws MalformedURLException {
-        assertEquals("[serverOne:3306]", URLHelpers.getServers("jdbc:myscluscon:mysql:read_cluster://serverOne/database").toString());
+    public void parsesSingleServerFromUrl() throws SQLException {
+        assertEquals("[serverOne:3306]", URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://serverOne/database").servers.toString());
     }
 
     @Test
-    public void parsesMultipleServersWithPortsFromUrl() throws MalformedURLException {
-        assertEquals("[serverOne:2134, serverTwo:2134, ServerThree:2134]", URLHelpers.getServers("jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,ServerThree:2134/database").toString());
+    public void parsesMultipleServersWithSamePortFromUrl() throws SQLException {
+        assertEquals("[serverOne:3306, serverTwo:3306, ServerThree:2134]", URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,ServerThree:2134/database").servers.toString());
     }
 
     @Test
-    public void constructsMysqlConnectUrl() throws MalformedURLException, SQLException {
+    public void parsesMultipleServersWithDifferentPortsFromUrl() throws SQLException {
+        assertEquals("[serverOne:1234, serverTwo:3306, ServerThree:2134]", URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://serverOne:1234,serverTwo:3306,ServerThree:2134/database").servers.toString());
+    }
+
+    @Test
+    public void constructsMysqlConnectUrl() throws SQLException {
         String url = "http://this.part.is.ignored/database?foobar=true&barfoo=false";
-        assertEquals("jdbc:mysql://server.domain.fi/database?foobar=true&barfoo=false", URLHelpers.constructMysqlConnectUrl("server.domain.fi", url, URLHelpers.getQueryParameters(url)));
+        assertEquals("jdbc:mysql://server.domain.fi/database?foobar=true&barfoo=false", URLHelpers.parse(url).asJdbcConnectUrl("server.domain.fi"));
     }
 
     @Test
-    public void constructsMysqlConnectUrlWithoutParams() throws MalformedURLException, SQLException {
+    public void constructsMysqlConnectUrlWithoutParams() throws SQLException {
         String url = "http://this.part.is.ignored/database";
-        assertEquals("jdbc:mysql://server.domain.fi/database", URLHelpers.constructMysqlConnectUrl("server.domain.fi", url, URLHelpers.getQueryParameters(url)));
+        assertEquals("jdbc:mysql://server.domain.fi/database", URLHelpers.parse(url).asJdbcConnectUrl("server.domain.fi"));
     }
 
     @Test
     public void constructsMysqlConnectUrlWithDefinedPort() throws MalformedURLException, SQLException {
         String url = "http://this.part.is.ignored:12345/database?foobar=true&barfoo=false";
-        assertEquals("jdbc:mysql://server.domain.fi:12345/database?foobar=true&barfoo=false", URLHelpers.constructMysqlConnectUrl("server.domain.fi:12345", url, URLHelpers.getQueryParameters(url)));
+        assertEquals("jdbc:mysql://server.domain.fi:12345/database?foobar=true&barfoo=false", URLHelpers.parse(url).asJdbcConnectUrl("server.domain.fi:12345"));
     }
-
-    @Test
-    public void invalidUrl() {
-        try {
-            URLHelpers.createURL("foobar");
-            fail("Should have failed");
-        } catch (RuntimeException e) {
-            assertTrue(e.getCause() instanceof MalformedURLException);
-        }
-    }
-
-
 }

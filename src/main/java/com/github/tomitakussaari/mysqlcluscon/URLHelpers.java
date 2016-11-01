@@ -1,8 +1,6 @@
 package com.github.tomitakussaari.mysqlcluscon;
 
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URLDecoder;
 import java.sql.SQLException;
 import java.util.*;
@@ -11,11 +9,22 @@ import java.util.stream.Stream;
 
 class URLHelpers {
 
-    static String constructMysqlConnectUrl(String server, String jdbcUrl, Map<String, List<String>> queryParameters) {
-        final String protocol = "jdbc:mysql";
-        final URL originalUrl = createURL(jdbcUrl);
-        final String database = originalUrl.getPath();
-        return protocol+"://"+server+database+toQueryParametersString(queryParameters);
+    static class URLInfo {
+        final String protocol;
+        final List<String> servers;
+        final String database;
+        final Map<String, List<String>> queryParameters;
+
+        URLInfo(String protocol, List<String> servers, String database, Map<String, List<String>> queryParameters) {
+            this.protocol = protocol;
+            this.servers = servers;
+            this.database = database;
+            this.queryParameters = queryParameters;
+        }
+
+        String asJdbcConnectUrl(String server) {
+            return "jdbc:mysql://"+server+database+toQueryParametersString(queryParameters);
+        }
     }
 
     static String toQueryParametersString(Map<String, List<String>> queryParameters) {
@@ -28,33 +37,30 @@ class URLHelpers {
                 .collect(Collectors.joining("&"));
     }
 
-    static List<String> getServers(String jdbcUrl) {
-        URL url = createURL(jdbcUrl);
-        int port = url.getPort() <= 0 ? 3306 : url.getPort();
-        return Stream.of(url.getHost().split(",")).map(host -> host+":"+port).collect(Collectors.toList());
+    static URLInfo parse(String jdbcUrl) throws SQLException {
+        //TODO horrible
+        //TODO: make safer & cleaner!
+        String afterProto = jdbcUrl.substring(jdbcUrl.indexOf("://")+3, jdbcUrl.length());
+        String database = "/";
+        if(afterProto.contains("/")) {
+            database = afterProto.substring(afterProto.indexOf("/"), afterProto.contains("?") ? afterProto.indexOf("?") : afterProto.length());
+            afterProto = afterProto.replaceAll(database, "");
+        }
+        String servers = afterProto.contains("?") ? afterProto.substring(0, afterProto.indexOf("?")): afterProto;
+        List<String> serverList = Stream.of(servers.split(",")).map(host -> host.contains(":") ? host : host + ":3306").collect(Collectors.toList());
+
+        return new URLInfo(getProtocol(jdbcUrl), serverList, database, getQueryParameters(jdbcUrl));
     }
 
     static String getProtocol(String jdbcUrl) {
-        return jdbcUrl.substring(0, jdbcUrl.indexOf("://"));
-    }
-
-    static URL createURL(String jdbcUrl) {
-        try {
-            //hackiness warning:
-            //Java URL by default supports only certain protocols, so protocol is "changed" here to make URL work.
-            //we could implement our own URLStreamHandler, but that would then be much more code...
-            return new URL(jdbcUrl.replace(MysclusconDriver.galeraClusterConnectorName, "http")
-                    .replace(MysclusconDriver.mysqlReadClusterConnectorName, "http"));
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
+        return jdbcUrl.substring(0, jdbcUrl.indexOf("://")); //TODO: safer & cleaner ?!
     }
 
     static String getParameter(Map<String, List<String>> queryParameters, String parameter, String defaultValue) {
         return queryParameters.getOrDefault(parameter, new ArrayList<>()).stream().findFirst().orElse(defaultValue);
     }
 
-    static Map<String, List<String>> getQueryParameters(String url) throws SQLException {
+    private static Map<String, List<String>> getQueryParameters(String url) throws SQLException {
         final Map<String, List<String>> queryParameters = new LinkedHashMap<>();
         final int startOfQueryParams = url.indexOf("?");
         if(startOfQueryParams < 0) {
