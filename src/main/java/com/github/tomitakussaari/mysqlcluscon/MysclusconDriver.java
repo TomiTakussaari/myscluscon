@@ -33,11 +33,11 @@ public class MysclusconDriver implements Driver {
     @Override
     public Connection connect(String jdbcUrl, Properties info) throws SQLException {
         if(acceptsURL(jdbcUrl)) {
-            URLHelpers.URLInfo connectUrl = URLHelpers.parse(jdbcUrl);
-            validateQueryParameters(connectUrl.queryParameters, jdbcUrl);
-            final ConnectionStatus wantedConnectionStatus = getWantedConnectionStatus(connectUrl.queryParameters);
-            final ConnectionChecker connectionChecker = chooseConnectionChecker(connectUrl, connectUrl.queryParameters);
-            return createProxyConnection(connectionChecker, createActualConnection(connectUrl, connectionChecker, info, wantedConnectionStatus), wantedConnectionStatus);
+            URLHelpers.URLInfo urlInfo = URLHelpers.parse(jdbcUrl);
+            validateQueryParameters(urlInfo.queryParameters, jdbcUrl);
+            final ConnectionStatus wantedConnectionStatus = getWantedConnectionStatus(urlInfo.queryParameters);
+            final ConnectionChecker connectionChecker = chooseConnectionChecker(urlInfo);
+            return createProxyConnection(connectionChecker, createActualConnection(urlInfo, connectionChecker, info, wantedConnectionStatus), wantedConnectionStatus);
         } else {
             return null;
         }
@@ -80,22 +80,22 @@ public class MysclusconDriver implements Driver {
         return LOGGER;
     }
 
-    private Connection createActualConnection(URLHelpers.URLInfo jdbcUrl, ConnectionChecker connectionChecker, Properties info, ConnectionStatus leastUsableConnection) throws SQLException {
-        final List<String> servers = serverBlackList.filterOutBlacklisted(jdbcUrl.servers);
-        return tryToOpenConnectionToValidServer(servers, connectionChecker, info, jdbcUrl, leastUsableConnection)
+    private Connection createActualConnection(URLHelpers.URLInfo urlInfo, ConnectionChecker connectionChecker, Properties info, ConnectionStatus leastUsableConnection) throws SQLException {
+        final List<String> servers = serverBlackList.filterOutBlacklisted(urlInfo.servers);
+        return tryToOpenConnectionToValidServer(servers, connectionChecker, info, urlInfo, leastUsableConnection)
                 .orElseThrow(() -> new SQLException("Unable to open connection, no valid host found from servers: " + servers));
     }
 
     private Optional<Connection> tryToOpenConnectionToValidServer(List<String> servers, ConnectionChecker connectionChecker,
-                                                                Properties info, URLHelpers.URLInfo jdbcUrl,
+                                                                Properties info, URLHelpers.URLInfo urlInfo,
                                                                 ConnectionStatus wantedConnectionStatus) throws SQLException {
-        LOGGER.fine(() -> "Trying to connect to servers " + servers + " from url " + jdbcUrl);
+        LOGGER.fine(() -> "Trying to connect to servers " + servers + " from url " + urlInfo);
         Collections.shuffle(servers);
 
         List<ConnectionAndStatus> connections = null;
         try {
             connections = servers.stream()
-                    .flatMap(server -> tryConnectingToHost(server, jdbcUrl, info))
+                    .flatMap(server -> tryConnectingToHost(server, urlInfo, info))
                     .map(conn -> new ConnectionAndStatus(conn, connectionChecker))
                     .collect(Collectors.toList());
             return findAndRemoveBestConnection(connections, wantedConnectionStatus);
@@ -119,9 +119,9 @@ public class MysclusconDriver implements Driver {
             .findFirst();
     }
 
-    private Stream<Connection> tryConnectingToHost(String server, URLHelpers.URLInfo jdbcUrl, Properties info) {
+    private Stream<Connection> tryConnectingToHost(String server, URLHelpers.URLInfo urlInfo, Properties info) {
         LOGGER.fine(() -> "Trying to connect to host " + server);
-        final String connectUrl = jdbcUrl.asJdbcConnectUrl(server);
+        final String connectUrl = urlInfo.asJdbcConnectUrl(server);
         try {
             LOGGER.fine(() -> "Connecting to " + connectUrl);
             return Stream.of(openRealConnection(info, connectUrl));
@@ -138,12 +138,12 @@ public class MysclusconDriver implements Driver {
     }
 
 
-    private ConnectionChecker chooseConnectionChecker(URLHelpers.URLInfo jdbcUrl, Map<String, List<String>> queryParameters) {
-        LOGGER.fine(() -> "Parsed Protocol: " + jdbcUrl.protocol + " from url" + jdbcUrl);
-        switch (jdbcUrl.protocol) {
-            case mysqlReadClusterConnectorName: return new ReadClusterConnectionChecker(queryParameters);
+    private ConnectionChecker chooseConnectionChecker(URLHelpers.URLInfo urlInfo) {
+        LOGGER.fine(() -> "Parsed Protocol: " + urlInfo.protocol + " from url" + urlInfo);
+        switch (urlInfo.protocol) {
+            case mysqlReadClusterConnectorName: return new ReadClusterConnectionChecker(urlInfo.queryParameters);
             case galeraClusterConnectorName:    return new GaleraClusterConnectionChecker();
-            default:                            throw new UnsupportedOperationException("Unsupported protocol: "+jdbcUrl.protocol);
+            default:                            throw new UnsupportedOperationException("Unsupported protocol: "+urlInfo.protocol);
         }
     }
 

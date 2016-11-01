@@ -33,6 +33,11 @@ class URLHelpers {
         String asJdbcConnectUrl(String server) {
             return "jdbc:mysql://"+server+"/"+database+toQueryParametersString(queryParameters);
         }
+
+        @Override
+        public String toString() {
+            return protocol+"://"+servers+"/"+database+toQueryParametersString(queryParameters);
+        }
     }
 
     static String toQueryParametersString(Map<String, List<String>> queryParameters) {
