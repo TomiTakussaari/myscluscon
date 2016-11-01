@@ -4,7 +4,10 @@ import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
 import com.github.tomitakussaari.mysqlcluscon.ConnectionStatus;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -30,8 +33,8 @@ public class MariaDbQueryClusterIntegrationTest {
         masterConn = DriverManager.getConnection(master.getURL("test"));
         slave1Conn = DriverManager.getConnection(slave1.getURL("test"));
         slave2Conn = DriverManager.getConnection(slave2.getURL("test"));
-        try(PreparedStatement statement = masterConn.prepareStatement("SHOW MASTER STATUS");
-            ResultSet resultSet = statement.executeQuery()) {
+        try (PreparedStatement statement = masterConn.prepareStatement("SHOW MASTER STATUS");
+             ResultSet resultSet = statement.executeQuery()) {
             if (resultSet.next()) {
                 String masterFile = resultSet.getString("file");
                 Integer masterPos = resultSet.getInt("Position");
@@ -59,7 +62,7 @@ public class MariaDbQueryClusterIntegrationTest {
 
     @Test
     public void mysclusconDriverChoosesAnyValidSlave() throws SQLException {
-        try(Connection conn = DriverManager.getConnection(connectionUrl(), "root", "")) {
+        try (Connection conn = DriverManager.getConnection(connectionUrl(), "root", "")) {
             assertTrue(conn.isValid(1));
         }
     }
@@ -67,20 +70,46 @@ public class MariaDbQueryClusterIntegrationTest {
     @Test
     public void mysclusconDriverChoosesSlaveThatIsRunningOverOneThatIsStopped() throws SQLException {
         executeStatement("STOP SLAVE;", slave2Conn);
-        for(int i = 0; i < 10; i++) {
-            try(Connection conn = DriverManager.getConnection(connectionUrl(), "root", "")) {
+        for (int i = 0; i < 10; i++) {
+            try (Connection conn = DriverManager.getConnection(connectionUrl(), "root", "")) {
                 String url = conn.getMetaData().getURL();
-                assertTrue(url, url.contains(slave1.getPort()+""));
+                assertTrue(url, url.contains(slave1.getPort() + ""));
             }
         }
     }
 
     @Test
+    public void mysclusconDriverChoosesActiveSlavesFromGivenList() throws SQLException {
+        int connectedToSlaveOne = 0;
+        int connectedToSlaveTwo = 0;
+        for (int i = 0; i < 10; i++) {
+            try (Connection conn = DriverManager.getConnection(connectionUrl(), "root", "")) {
+                String url = conn.getMetaData().getURL();
+                if (url.contains(slave1.getPort() + "")) {
+                    connectedToSlaveOne++;
+                }
+                if (url.contains(slave2.getPort() + "")) {
+                    connectedToSlaveTwo++;
+                }
+            }
+        }
+        assertTrue("Did not connect to slave one", connectedToSlaveOne > 0);
+        assertTrue("Did not connect to slave two", connectedToSlaveTwo > 0);
+    }
+
+    @Test
+    public void replicationMasterIsConsideredValid() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(master.getURL("test"), "root", "")) {
+            assertTrue(conn.isValid(1));
+        }
+    }
+
+    @Test
     public void connectionToStoppedSlaveIsNotValidWhenWantedConnectionStatusIsOk() throws SQLException {
-        try(Connection conn = DriverManager.getConnection(connectionUrl()+"?connectionStatus=OK", "root", "")) {
+        try (Connection conn = DriverManager.getConnection(connectionUrl() + "?connectionStatus=OK", "root", "")) {
             assertTrue(conn.isValid(1));
             String url = conn.getMetaData().getURL();
-            if(url.contains(slave1.getPort()+"")) {
+            if (url.contains(slave1.getPort() + "")) {
                 executeStatement("STOP SLAVE;", slave1Conn);
             } else {
                 executeStatement("STOP SLAVE;", slave2Conn);
@@ -90,7 +119,7 @@ public class MariaDbQueryClusterIntegrationTest {
     }
 
     private String connectionUrl() {
-        return "jdbc:myscluscon:mysql:read_cluster://localhost:"+slave1.getPort()+",localhost:"+slave2.getPort()+"/test";
+        return "jdbc:myscluscon:mysql:read_cluster://localhost:" + slave1.getPort() + ",localhost:" + slave2.getPort() + "/test";
     }
 
     @AfterClass
@@ -120,7 +149,7 @@ public class MariaDbQueryClusterIntegrationTest {
     }
 
     private static void executeStatement(String statement, Connection conn) throws SQLException {
-        try(Statement st= conn.createStatement()) {
+        try (Statement st = conn.createStatement()) {
             st.execute(statement);
         }
     }
