@@ -11,6 +11,16 @@ import static org.junit.Assert.*;
 public class URLHelpersTest {
 
     @Test
+    public void givesErrorMessageOnUrlConsideredInvalid() {
+        try {
+            URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://server.domain.fi");
+            fail("should have failed to parse");
+        } catch(SQLException e) {
+            assertEquals("Unable to parse jdbc url: jdbc:myscluscon:mysql:read_cluster://server.domain.fi with regexp: (.*)://(.*)/(.*)?", e.getMessage());
+        }
+    }
+
+    @Test
     public void toQueryParametersStringWithMultipleValues() {
         Map<String, List<String>> queryParams = new TreeMap<>();
         queryParams.put("foo", Arrays.asList("1", "2"));
@@ -27,33 +37,40 @@ public class URLHelpersTest {
 
     @Test
     public void parsesMultipleQueryParametersCorrectly() throws SQLException {
-        Map<String, List<String>> queryParameters = URLHelpers.parse("jdbc:mysql://server.domain.fi/database?foobar=true&barfoo=false").queryParameters;
+        Map<String, List<String>> queryParameters = URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://server.domain.fi/database?foobar=true&barfoo=false").queryParameters;
         assertEquals("[true]", queryParameters.get("foobar").toString());
         assertEquals("[false]", queryParameters.get("barfoo").toString());
     }
 
     @Test
+    public void parsesMultipleQueryParametersCorrectlyFromGalera() throws SQLException {
+        Map<String, List<String>> queryParameters = URLHelpers.parse("jdbc:myscluscon:galera:cluster://server.foo:1234/?foo=is_true&bar=not_true").queryParameters;
+        assertEquals("[is_true]", queryParameters.get("foo").toString());
+        assertEquals("[not_true]", queryParameters.get("bar").toString());
+    }
+
+    @Test
     public void parsesProtocol() throws SQLException {
-        String protocol = URLHelpers.getProtocol("jdbc:mysql://server.domain.fi/database?foobar=true&barfoo=false");
-        assertEquals("jdbc:mysql", protocol);
+        String protocol = URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://server.domain.fi/database?foobar=true&barfoo=false").protocol;
+        assertEquals("jdbc:myscluscon:mysql:read_cluster", protocol);
     }
 
     @Test
     public void parsesSingleQueryParameterCorrectly() throws SQLException {
-        Map<String, List<String>> queryParameters = URLHelpers.parse("jdbc:mysql://server.domain.fi/database?foobar=true").queryParameters;
+        Map<String, List<String>> queryParameters = URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://server.domain.fi/database?foobar=true").queryParameters;
         assertEquals("[true]", queryParameters.get("foobar").toString());
     }
 
     @Test
     public void parsesMultipleQueryParametersForSameKey() throws SQLException {
-        Map<String, List<String>> queryParameters = URLHelpers.parse("jdbc:mysql://server.domain.fi/database?foobar=bar&foobar=foo").queryParameters;
+        Map<String, List<String>> queryParameters = URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://server.domain.fi/database?foobar=bar&foobar=foo").queryParameters;
         assertTrue(queryParameters.get("foobar").contains("bar"));
         assertTrue(queryParameters.get("foobar").contains("foo"));
     }
 
     @Test
     public void valueLessQueryParam() throws SQLException {
-        Map<String, List<String>> queryParameters = URLHelpers.parse("jdbc:mysql://server.domain.fi/database?foobar").queryParameters;
+        Map<String, List<String>> queryParameters = URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://server.domain.fi/database?foobar").queryParameters;
         assertTrue(queryParameters.containsKey("foobar"));
         assertEquals(1, queryParameters.get("foobar").size());
         assertEquals(null, queryParameters.get("foobar").get(0));
@@ -76,19 +93,19 @@ public class URLHelpersTest {
 
     @Test
     public void constructsMysqlConnectUrl() throws SQLException {
-        String url = "http://this.part.is.ignored/database?foobar=true&barfoo=false";
+        String url = "jdbc:myscluscon:mysql:read_cluster://this.part.is.ignored/database?foobar=true&barfoo=false";
         assertEquals("jdbc:mysql://server.domain.fi/database?foobar=true&barfoo=false", URLHelpers.parse(url).asJdbcConnectUrl("server.domain.fi"));
     }
 
     @Test
     public void constructsMysqlConnectUrlWithoutParams() throws SQLException {
-        String url = "http://this.part.is.ignored/database";
+        String url = "jdbc:myscluscon:mysql:read_cluster://this.part.is.ignored/database";
         assertEquals("jdbc:mysql://server.domain.fi/database", URLHelpers.parse(url).asJdbcConnectUrl("server.domain.fi"));
     }
 
     @Test
     public void constructsMysqlConnectUrlWithDefinedPort() throws MalformedURLException, SQLException {
-        String url = "http://this.part.is.ignored:12345/database?foobar=true&barfoo=false";
+        String url = "jdbc:myscluscon:mysql:read_cluster://this.part.is.ignored:12345/database?foobar=true&barfoo=false";
         assertEquals("jdbc:mysql://server.domain.fi:12345/database?foobar=true&barfoo=false", URLHelpers.parse(url).asJdbcConnectUrl("server.domain.fi:12345"));
     }
 }
