@@ -6,16 +6,38 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Collections.emptyList;
+
 class URLHelpers {
 
-    static String constructMysqlConnectUrl(String server, String jdbcUrl, Map<String, List<String>> queryParameters) {
-        final String protocol = "jdbc:mysql";
-        final URL originalUrl = createURL(jdbcUrl);
-        final String database = originalUrl.getPath();
-        return protocol+"://"+server+database+toQueryParametersString(queryParameters);
+    private static final Pattern urlParsePattern = Pattern.compile("(.*)://(.*)/(.*)?");
+
+    static class URLInfo {
+        final String protocol;
+        final List<String> servers;
+        final String database;
+        final Map<String, List<String>> queryParameters;
+
+        URLInfo(String protocol, List<String> servers, String database, Map<String, List<String>> queryParameters) {
+            this.protocol = protocol;
+            this.servers = servers;
+            this.database = database;
+            this.queryParameters = queryParameters;
+        }
+
+        String asJdbcConnectUrl(String server) {
+            return "jdbc:mysql://"+server+"/"+database+toQueryParametersString(queryParameters);
+        }
+
+        @Override
+        public String toString() {
+            return protocol+"://"+servers+"/"+database+toQueryParametersString(queryParameters);
+        }
     }
 
     static String toQueryParametersString(Map<String, List<String>> queryParameters) {
@@ -28,33 +50,26 @@ class URLHelpers {
                 .collect(Collectors.joining("&"));
     }
 
-    static List<String> getServers(String jdbcUrl) {
-        URL url = createURL(jdbcUrl);
-        int port = url.getPort() <= 0 ? 3306 : url.getPort();
-        return Stream.of(url.getHost().split(",")).map(host -> host+":"+port).collect(Collectors.toList());
-    }
+    static URLInfo parse(String jdbcUrl) throws SQLException {
+        Matcher matcher = urlParsePattern.matcher(jdbcUrl);
 
-    static String getProtocol(String jdbcUrl) {
-        return jdbcUrl.substring(0, jdbcUrl.indexOf("://"));
-    }
+        if(matcher.find()) {
+            String protocol = matcher.group(1);
+            String servers = matcher.group(2);
+            String database = matcher.group(3).split("\\?")[0]; //remove queryparams
+            List<String> serverList = Stream.of(servers.split(",")).map(host -> host.contains(":") ? host : host + ":3306").collect(Collectors.toList());
+            return new URLInfo(protocol, serverList, database, getQueryParameters(jdbcUrl));
 
-    static URL createURL(String jdbcUrl) {
-        try {
-            //hackiness warning:
-            //Java URL by default supports only certain protocols, so protocol is "changed" here to make URL work.
-            //we could implement our own URLStreamHandler, but that would then be much more code...
-            return new URL(jdbcUrl.replace(MysclusconDriver.galeraClusterConnectorName, "http")
-                    .replace(MysclusconDriver.mysqlReadClusterConnectorName, "http"));
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
+        } else {
+            throw new SQLException("Unable to parse jdbc url: "+jdbcUrl+" with regexp: "+urlParsePattern);
         }
     }
 
     static String getParameter(Map<String, List<String>> queryParameters, String parameter, String defaultValue) {
-        return queryParameters.getOrDefault(parameter, new ArrayList<>()).stream().findFirst().orElse(defaultValue);
+        return queryParameters.getOrDefault(parameter, emptyList()).stream().findFirst().orElse(defaultValue);
     }
 
-    static Map<String, List<String>> getQueryParameters(String url) throws SQLException {
+    private static Map<String, List<String>> getQueryParameters(String url) throws SQLException {
         final Map<String, List<String>> queryParameters = new LinkedHashMap<>();
         final int startOfQueryParams = url.indexOf("?");
         if(startOfQueryParams < 0) {

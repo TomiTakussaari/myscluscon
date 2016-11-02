@@ -8,8 +8,5 @@ cache:
 jdk:
   - oraclejdk8
 
-before_script:
-  - mysql -e 'create database myscluscon_test;'
-
 after_success:
   - mvn jacoco:report coveralls:report
