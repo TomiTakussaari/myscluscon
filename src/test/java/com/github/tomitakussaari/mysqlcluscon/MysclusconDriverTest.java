@@ -347,6 +347,16 @@ public class MysclusconDriverTest {
         assertEquals("A:1234", configurableDriver.blackListedServers().iterator().next());
     }
 
+    @Test
+    public void parentLoggerIsReturned() {
+        assertNotNull(driver.getParentLogger());
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void unsupportedProtocolResultsInUnsupportedOperationException() {
+        driver.chooseConnectionChecker(new URLHelpers.URLInfo("foobar", null, null, null));
+    }
+
     private void expectConnection(String key, Supplier<Connection> connectionSupplier) {
         configurableDriver.connectUrls.put(key, connectionSupplier);
     }

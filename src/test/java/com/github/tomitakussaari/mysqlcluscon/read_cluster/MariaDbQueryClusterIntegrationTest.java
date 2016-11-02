@@ -118,6 +118,30 @@ public class MariaDbQueryClusterIntegrationTest {
         }
     }
 
+    @Test
+    public void doesNotConnectToStoppedSlaveWhenThereIsRunningSlave() throws SQLException {
+        int connectedToSlaveOne = 0;
+        executeStatement("STOP SLAVE;", slave1Conn);
+        for (int i = 0; i < 10; i++) {
+            try (Connection conn = DriverManager.getConnection(connectionUrl(), "root", "")) {
+                String url = conn.getMetaData().getURL();
+                if (url.contains(slave1.getPort() + "")) {
+                    connectedToSlaveOne++;
+                }
+            }
+        }
+        assertEquals("should not have connected to slave one because it was stopped", 0, connectedToSlaveOne);
+    }
+
+    @Test
+    public void transparentlyIgnoresInvalidSlaves() throws SQLException {
+        try (Connection conn = DriverManager.getConnection("jdbc:myscluscon:mysql:read_cluster://localhost:"
+                + slave1.getPort() + ",localhost:" + slave2.getPort() +",localhost:1"+ "/test", "root", "")) {
+            assertTrue(conn.isValid(1));
+        }
+    }
+
+
     private String connectionUrl() {
         return "jdbc:myscluscon:mysql:read_cluster://localhost:" + slave1.getPort() + ",localhost:" + slave2.getPort() + "/test";
     }

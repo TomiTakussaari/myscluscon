@@ -56,6 +56,12 @@ public class URLHelpersTest {
     }
 
     @Test
+    public void urlInfoToString() throws SQLException {
+        URLHelpers.URLInfo urlInfo = URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://server.domain.fi/database?foobar=true&barfoo=false");
+        assertEquals("jdbc:myscluscon:mysql:read_cluster://[server.domain.fi:3306]/database?foobar=true&barfoo=false", urlInfo.toString());
+    }
+
+    @Test
     public void parsesSingleQueryParameterCorrectly() throws SQLException {
         Map<String, List<String>> queryParameters = URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://server.domain.fi/database?foobar=true").queryParameters;
         assertEquals("[true]", queryParameters.get("foobar").toString());

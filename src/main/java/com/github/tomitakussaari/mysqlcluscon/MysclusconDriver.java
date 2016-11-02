@@ -138,7 +138,7 @@ public class MysclusconDriver implements Driver {
     }
 
 
-    private ConnectionChecker chooseConnectionChecker(URLHelpers.URLInfo urlInfo) {
+    ConnectionChecker chooseConnectionChecker(URLHelpers.URLInfo urlInfo) {
         LOGGER.fine(() -> "Parsed Protocol: " + urlInfo.protocol + " from url" + urlInfo);
         switch (urlInfo.protocol) {
             case mysqlReadClusterConnectorName: return new ReadClusterConnectionChecker(urlInfo.queryParameters);
