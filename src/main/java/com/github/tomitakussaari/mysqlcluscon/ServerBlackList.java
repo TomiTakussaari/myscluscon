@@ -26,7 +26,7 @@ class ServerBlackList {
         serversAndBlackListTimes.put(server, nowSupplier.get());
     }
 
-    List<String> filterOutBlacklisted(List<String> allServers) {
+    List<String> withoutBlackListed(List<String> allServers) {
         purgeOldEntries();
         return allServers.stream()
                 .filter(server -> !serversAndBlackListTimes.containsKey(server))

@@ -56,13 +56,11 @@ public class MysclusconDriverTest {
     }
 
     @Test
-    public void triesNodesUntilFindsWorkingOneWhenGalera() throws SQLException {
+    public void returnsFirstGaleraConnectionThatIsWorking() throws SQLException {
         mockGaleraHealthChek();
 
         driver.connect("jdbc:myscluscon:galera:cluster://A:1234,B:1234,C:1234/?foo=bar&bar=foo", new Properties());
-        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://A:1234/?foo=bar&bar=foo&connectTimeout=500"));
-        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://B:1234/?foo=bar&bar=foo&connectTimeout=500"));
-        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://C:1234/?foo=bar&bar=foo&connectTimeout=500"));
+        assertEquals(1, driver.connectUrls.size());
     }
 
     @Test
@@ -239,72 +237,72 @@ public class MysclusconDriverTest {
 
     @Test
     public void findsOkConnection() {
-        List<ConnectionAndStatus> connections = new ArrayList<>();
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.OK));
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.BEHIND));
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.BEHIND));
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.DEAD));
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.DEAD));
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
+        List<ConnectionInfo> connections = new ArrayList<>();
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.OK));
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.BEHIND));
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.BEHIND));
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.DEAD));
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.DEAD));
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.STOPPED));
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.STOPPED));
         Collections.shuffle(connections);
-        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections, ConnectionStatus.STOPPED);
+        Optional<ConnectionInfo> bestConnection = driver.findBestConnection(connections, ConnectionStatus.STOPPED);
         assertEquals(ConnectionStatus.OK, bestConnection.get().getStatus());
     }
 
     @Test
     public void findsLaggingConnectionWhenItIsBest() {
-        List<ConnectionAndStatus> connections = new ArrayList<>();
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.BEHIND));
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.DEAD));
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
+        List<ConnectionInfo> connections = new ArrayList<>();
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.BEHIND));
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.DEAD));
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.STOPPED));
         Collections.shuffle(connections);
 
-        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections, ConnectionStatus.STOPPED);
+        Optional<ConnectionInfo> bestConnection = driver.findBestConnection(connections, ConnectionStatus.STOPPED);
         assertEquals(ConnectionStatus.BEHIND, bestConnection.get().getStatus());
     }
 
     @Test
     public void doesNotReturnLaggingConnectionWhenWeWantAtleastOk() {
-        List<ConnectionAndStatus> connections = new ArrayList<>();
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.BEHIND));
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.DEAD));
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
+        List<ConnectionInfo> connections = new ArrayList<>();
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.BEHIND));
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.DEAD));
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.STOPPED));
         Collections.shuffle(connections);
 
-        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections, ConnectionStatus.OK);
+        Optional<ConnectionInfo> bestConnection = driver.findBestConnection(connections, ConnectionStatus.OK);
         assertFalse(bestConnection.isPresent());
     }
 
     @Test
     public void returnsLaggingConnectionWhenWeWantAtleastitAndItIsBestAvailable() {
-        List<ConnectionAndStatus> connections = new ArrayList<>();
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.BEHIND));
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.DEAD));
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
+        List<ConnectionInfo> connections = new ArrayList<>();
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.BEHIND));
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.DEAD));
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.STOPPED));
         Collections.shuffle(connections);
 
-        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections, ConnectionStatus.BEHIND);
+        Optional<ConnectionInfo> bestConnection = driver.findBestConnection(connections, ConnectionStatus.BEHIND);
         assertEquals(ConnectionStatus.BEHIND, bestConnection.get().getStatus());
     }
 
     @Test
     public void findsStoppedConnectionWhenItIsBest() {
-        List<ConnectionAndStatus> connections = new ArrayList<>();
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.DEAD));
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.STOPPED));
+        List<ConnectionInfo> connections = new ArrayList<>();
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.DEAD));
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.STOPPED));
         Collections.shuffle(connections);
 
-        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections, ConnectionStatus.STOPPED);
+        Optional<ConnectionInfo> bestConnection = driver.findBestConnection(connections, ConnectionStatus.STOPPED);
         assertEquals(ConnectionStatus.STOPPED, bestConnection.get().getStatus());
     }
 
     @Test
     public void doesNotReturnDeadConnection() {
-        List<ConnectionAndStatus> connections = new ArrayList<>();
-        connections.add(new ConnectionAndStatus(null, (conn, t) -> ConnectionStatus.DEAD));
+        List<ConnectionInfo> connections = new ArrayList<>();
+        connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.DEAD));
 
-        Optional<ConnectionAndStatus> bestConnection = driver.findBestConnection(connections, ConnectionStatus.STOPPED);
+        Optional<ConnectionInfo> bestConnection = driver.findBestConnection(connections, ConnectionStatus.STOPPED);
         assertFalse(bestConnection.toString(), bestConnection.isPresent());
     }
 
@@ -332,19 +330,21 @@ public class MysclusconDriverTest {
         expectConnection("jdbc:mysql://A:1234/?connectTimeout=500", () -> {
             throw new RuntimeException("Cannot open connection");
         });
-        expectConnection("jdbc:mysql://B:1234/?connectTimeout=500", "valid", 0, true, true);
-        expectConnection("jdbc:mysql://C:1234/?connectTimeout=500", "valid", 0, true, true);
-
-        configurableDriver.connect("jdbc:myscluscon:mysql:read_cluster://A:1234,B:1234,C:1234/", new Properties());
-        assertEquals(configurableDriver.connectUrls.toString(), 0, configurableDriver.connectUrls.size());
-
-        expectConnection("jdbc:mysql://B:1234/?connectTimeout=500", "valid", 0, true, true);
-        expectConnection("jdbc:mysql://C:1234/?connectTimeout=500", "valid", 0, true, true);
-        configurableDriver.connect("jdbc:myscluscon:mysql:read_cluster://A:1234,B:1234,C:1234/", new Properties());
-
-        assertEquals(configurableDriver.connectUrls.toString(), 0, configurableDriver.connectUrls.size());
-
+        try {
+            configurableDriver.connect("jdbc:myscluscon:mysql:read_cluster://A:1234/", new Properties());
+            fail("should have thrown SQLException when connecting to non-working server");
+        } catch (SQLException e) {
+            assertEquals("Unable to open connection, no valid host found from servers: [A:1234]", e.getMessage());
+        }
         assertEquals("A:1234", configurableDriver.blackListedServers().iterator().next());
+
+        expectConnection("jdbc:mysql://A:1234/?connectTimeout=500", () -> {
+            throw new RuntimeException("Cannot open connection");
+        });
+        expectConnection("jdbc:mysql://B:1234/?connectTimeout=500", "valid-conn", 0, true, true);
+        configurableDriver.connect("jdbc:myscluscon:mysql:read_cluster://A:1234,B:1234/", new Properties());
+
+        assertEquals(configurableDriver.connectionsToConnect.toString(), 1, configurableDriver.connectionsToConnect.size());
     }
 
     @Test
@@ -358,7 +358,7 @@ public class MysclusconDriverTest {
     }
 
     private void expectConnection(String key, Supplier<Connection> connectionSupplier) {
-        configurableDriver.connectUrls.put(key, connectionSupplier);
+        configurableDriver.connectionsToConnect.put(key, connectionSupplier);
     }
 
     class ConnectURLStoringDriver extends MysclusconDriver {
@@ -372,11 +372,11 @@ public class MysclusconDriverTest {
     }
 
     static class ConnectionExpectingDriver extends MysclusconDriver {
-        final Map<String, Supplier<Connection>> connectUrls = new HashMap<>();
+        final Map<String, Supplier<Connection>> connectionsToConnect = new HashMap<>();
 
         @Override
         protected Connection openRealConnection(Properties info, String connectUrl) throws SQLException {
-            return connectUrls.remove(connectUrl).get();
+            return connectionsToConnect.remove(connectUrl).get();
         }
     }
 

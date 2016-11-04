@@ -7,8 +7,6 @@ import java.lang.reflect.Proxy;
 import java.sql.*;
 import java.util.*;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.github.tomitakussaari.mysqlcluscon.Params.DEFAULT_CONNECT_TIMEOUT_IN_MS;
 import static com.github.tomitakussaari.mysqlcluscon.Params.MYSQL_CONNECT_TIMEOUT_PARAM;
@@ -81,7 +79,7 @@ public class MysclusconDriver implements Driver {
     }
 
     private Connection createActualConnection(URLHelpers.URLInfo urlInfo, ConnectionChecker connectionChecker, Properties info, ConnectionStatus leastUsableConnection) throws SQLException {
-        final List<String> servers = serverBlackList.filterOutBlacklisted(urlInfo.servers);
+        final List<String> servers = serverBlackList.withoutBlackListed(urlInfo.servers);
         return tryToOpenConnectionToValidServer(servers, connectionChecker, info, urlInfo, leastUsableConnection)
                 .orElseThrow(() -> new SQLException("Unable to open connection, no valid host found from servers: " + servers));
     }
@@ -90,45 +88,62 @@ public class MysclusconDriver implements Driver {
                                                                 Properties info, URLHelpers.URLInfo urlInfo,
                                                                 ConnectionStatus wantedConnectionStatus) throws SQLException {
         LOGGER.fine(() -> "Trying to connect to servers " + servers + " from url " + urlInfo);
-        Collections.shuffle(servers);
 
-        List<ConnectionAndStatus> connections = null;
+        List<ConnectionInfo> openConnections = new ArrayList<>();
         try {
-            connections = servers.stream()
-                    .flatMap(server -> tryConnectingToHost(server, urlInfo, info))
-                    .map(conn -> new ConnectionAndStatus(conn, connectionChecker))
-                    .collect(Collectors.toList());
-            return findAndRemoveBestConnection(connections, wantedConnectionStatus);
-        } finally {
-            if(connections != null) {
-                connections.forEach(ConnectionAndStatus::close);
+            for(String server: inRandomOrder(servers)) {
+                Optional<ConnectionInfo> conn = tryOpenConnection(connectionChecker, info, urlInfo, server);
+                if(isBestPossible(conn)) {
+                    return conn.map(ConnectionInfo::getConnection);
+                } else {
+                    blackListedIfServerDown(server, conn).ifPresent(openConnections::add);
+                }
             }
+            Optional<ConnectionInfo> bestConnection = findBestConnection(openConnections, wantedConnectionStatus);
+            bestConnection.ifPresent(openConnections::remove);
+            return bestConnection.map(ConnectionInfo::getConnection);
+        } finally {
+            openConnections.forEach(ConnectionInfo::close);
         }
     }
 
-    private Optional<Connection> findAndRemoveBestConnection(List<ConnectionAndStatus> connections, ConnectionStatus leastUsableConnection) {
-        Optional<ConnectionAndStatus> bestConnection = findBestConnection(connections, leastUsableConnection);
-        bestConnection.ifPresent(connections::remove);
-        return bestConnection.map(conn -> conn.connection);
+    private List<String> inRandomOrder(List<String> servers) {
+        List<String> randomOrderServers = new ArrayList<>(servers);
+        Collections.shuffle(randomOrderServers);
+        return randomOrderServers;
     }
 
-    Optional<ConnectionAndStatus> findBestConnection(List<ConnectionAndStatus> connections, ConnectionStatus wantedConnectionStatus) {
+    private Optional<ConnectionInfo> blackListedIfServerDown(String server, Optional<ConnectionInfo> conn) {
+        if(conn.map(ConnectionInfo::getStatus).filter(ConnectionStatus.DEAD::equals).isPresent() || !conn.isPresent()) {
+            serverBlackList.blackList(server);
+        }
+        return conn;
+    }
+
+    private boolean isBestPossible(Optional<ConnectionInfo> conn) {
+        return conn.map(ConnectionInfo::getStatus).filter(status -> status == ConnectionStatus.OK).isPresent();
+    }
+
+    private Optional<ConnectionInfo> tryOpenConnection(ConnectionChecker connectionChecker, Properties info, URLHelpers.URLInfo urlInfo, String server) {
+        return tryConnectingToHost(server, urlInfo, info).map(c -> new ConnectionInfo(c, connectionChecker));
+    }
+
+    Optional<ConnectionInfo> findBestConnection(List<ConnectionInfo> connections, ConnectionStatus wantedConnectionStatus) {
         return connections.stream()
-            .filter(connectionAndStatus -> connectionAndStatus.getStatus().priority >= wantedConnectionStatus.priority)
+            .filter(connectionInfo -> connectionInfo.getStatus().priority >= wantedConnectionStatus.priority)
             .sorted((left, right) -> right.getStatus().priority.compareTo(left.getStatus().priority))
             .findFirst();
     }
 
-    private Stream<Connection> tryConnectingToHost(String server, URLHelpers.URLInfo urlInfo, Properties info) {
+    private Optional<Connection> tryConnectingToHost(String server, URLHelpers.URLInfo urlInfo, Properties info) {
         LOGGER.fine(() -> "Trying to connect to host " + server);
         final String connectUrl = urlInfo.asJdbcConnectUrl(server);
         try {
             LOGGER.fine(() -> "Connecting to " + connectUrl);
-            return Stream.of(openRealConnection(info, connectUrl));
+            return Optional.of(openRealConnection(info, connectUrl));
         } catch(Exception e) {
-            serverBlackList.blackList(server);
             LOGGER.info(() -> "Error while opening connection " + connectUrl + " " + e.getMessage());
-            return Stream.empty();
+            return Optional.empty();
         }
     }
 

@@ -3,6 +3,7 @@ package com.github.tomitakussaari.mysqlcluscon.read_cluster;
 import com.github.tomitakussaari.mysqlcluscon.ConnectionChecker;
 import com.github.tomitakussaari.mysqlcluscon.ConnectionStatus;
 import com.github.tomitakussaari.mysqlcluscon.MysclusconDriver;
+import lombok.RequiredArgsConstructor;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -14,14 +15,11 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@RequiredArgsConstructor
 public class ReadClusterConnectionChecker implements ConnectionChecker {
 
     private static final Logger LOGGER = Logger.getLogger(ReadClusterConnectionChecker.class.getName());
     private final int maxSlaveLag;
-
-    ReadClusterConnectionChecker(int maxSlaveLag) {
-        this.maxSlaveLag = maxSlaveLag;
-    }
 
     public ReadClusterConnectionChecker(Map<String, List<String>> queryParameters) {
         this(getParameter(queryParameters, "maxSlaveLag", 2));

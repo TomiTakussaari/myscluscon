@@ -26,7 +26,7 @@ public class ServerBlackListTest {
     public void filtersOutBlacklistedServers() {
         when(nowSupplier.get()).thenReturn(System.currentTimeMillis());
         serverBlackList.blackList("server1.fi:3306");
-        List<String> filteredList = serverBlackList.filterOutBlacklisted(Arrays.asList("server1.fi:3306", "server1.fi:3307"));
+        List<String> filteredList = serverBlackList.withoutBlackListed(Arrays.asList("server1.fi:3306", "server1.fi:3307"));
         assertEquals(1, filteredList.size());
         assertEquals("server1.fi:3307", filteredList.get(0));
     }
@@ -44,7 +44,7 @@ public class ServerBlackListTest {
         when(nowSupplier.get()).thenReturn(100 * 60 * 1000L);
         serverBlackList.blackList("server1.fi:3306");
         when(nowSupplier.get()).thenReturn(200 * 60 * 1000L);
-        List<String> filteredList = serverBlackList.filterOutBlacklisted(Arrays.asList("server1.fi:3306", "server1.fi:3307"));
+        List<String> filteredList = serverBlackList.withoutBlackListed(Arrays.asList("server1.fi:3306", "server1.fi:3307"));
         assertEquals(2, filteredList.size());
 
     }
