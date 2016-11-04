@@ -101,6 +101,15 @@ public class ReadClusterConnectionCheckerTest {
     }
 
     @Test
+    public void dbConsideredDeadWhenNoDbPrivilegesToCheckSlaveStatus() throws SQLException {
+        when(conn.createStatement()).thenReturn(statement);
+        when(conn.isValid(anyInt())).thenReturn(true);
+        when(statement.executeQuery("SHOW SLAVE STATUS")).thenThrow(new SQLException("No access", "42000"));
+
+        assertEquals(ConnectionStatus.DEAD, checker.connectionStatus(conn));
+    }
+
+    @Test
     public void slaveIONotRunning() throws SQLException {
         when(conn.createStatement()).thenReturn(statement);
         when(conn.isValid(anyInt())).thenReturn(true);
