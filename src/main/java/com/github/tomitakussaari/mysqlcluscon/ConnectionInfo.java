@@ -11,7 +11,6 @@ import java.sql.SQLException;
 class ConnectionInfo implements AutoCloseable {
     @Getter
     private final Connection connection;
-    @Getter
     private final ConnectionChecker checker;
     @Getter(lazy = true)
     private final ConnectionStatus status = calculateStatus();
