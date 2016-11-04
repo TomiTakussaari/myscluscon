@@ -19,7 +19,7 @@ public class ServerBlackListTest {
 
     @Before
     public void before() {
-        serverBlackList = new ServerBlackList(nowSupplier);
+        serverBlackList = new ServerBlackList(nowSupplier, 2000);
     }
 
     @Test
@@ -46,6 +46,16 @@ public class ServerBlackListTest {
         when(nowSupplier.get()).thenReturn(200 * 60 * 1000L);
         List<String> filteredList = serverBlackList.withoutBlackListed(Arrays.asList("server1.fi:3306", "server1.fi:3307"));
         assertEquals(2, filteredList.size());
+    }
 
+    @Test
+    public void clearsBlackListedAfterBlackListTimeWhenUsingRealTimeAsNow() throws InterruptedException {
+        ServerBlackList serverBlackListWithCurrentTime = new ServerBlackList(System::currentTimeMillis, 500);
+        serverBlackListWithCurrentTime.blackList("server1.fi:3306");
+        List<String> filteredList = serverBlackListWithCurrentTime.withoutBlackListed(Arrays.asList("server1.fi:3306", "server1.fi:3307"));
+        assertEquals(1, filteredList.size());
+        Thread.sleep(600);
+        filteredList = serverBlackListWithCurrentTime.withoutBlackListed(Arrays.asList("server1.fi:3306", "server1.fi:3307"));
+        assertEquals(2, filteredList.size());
     }
 }

@@ -1,5 +1,7 @@
 package com.github.tomitakussaari.mysqlcluscon;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -7,19 +9,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 class ServerBlackList {
 
-    private static final long blackListTimeInMs = 2 * 60 * 1000;
+    private static final long defaultBlackListTimeInMs = 2 * 60 * 1000;
     private final Map<String, Long> serversAndBlackListTimes = new ConcurrentHashMap<>();
 
     private final Supplier<Long> nowSupplier;
+    private final long blackListTimeInMs;
 
     ServerBlackList() {
-        this(System::currentTimeMillis);
-    }
-
-    ServerBlackList(Supplier<Long> nowSupplier) {
-        this.nowSupplier = nowSupplier;
+        this(System::currentTimeMillis, defaultBlackListTimeInMs);
     }
 
     void blackList(String server) {
@@ -34,10 +34,10 @@ class ServerBlackList {
     }
 
     private void purgeOldEntries() {
-        serversAndBlackListTimes.entrySet()
-                .stream()
+        Set<Map.Entry<String, Long>> blackListEntries = serversAndBlackListTimes.entrySet();
+        blackListEntries.stream()
                 .filter(entry -> entry.getValue() + blackListTimeInMs < nowSupplier.get())
-                .forEach(entry -> serversAndBlackListTimes.remove(entry.getKey()));
+                .forEach(blackListEntries::remove);
     }
 
     Set<String> blackListed() {
