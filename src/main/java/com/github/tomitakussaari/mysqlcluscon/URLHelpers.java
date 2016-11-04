@@ -1,5 +1,7 @@
 package com.github.tomitakussaari.mysqlcluscon;
 
+import lombok.RequiredArgsConstructor;
+
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -17,18 +19,12 @@ class URLHelpers {
 
     private static final Pattern urlParsePattern = Pattern.compile("(.*)://(.*)/(.*)?");
 
+    @RequiredArgsConstructor
     static class URLInfo {
         final String protocol;
         final List<String> servers;
         final String database;
         final Map<String, List<String>> queryParameters;
-
-        URLInfo(String protocol, List<String> servers, String database, Map<String, List<String>> queryParameters) {
-            this.protocol = protocol;
-            this.servers = servers;
-            this.database = database;
-            this.queryParameters = queryParameters;
-        }
 
         String asJdbcConnectUrl(String server) {
             return "jdbc:mysql://"+server+"/"+database+toQueryParametersString(queryParameters);

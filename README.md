@@ -82,3 +82,5 @@ Following queryparameters can be used to configure myscluscon:
     //Connection to serverOne, serverTwo or serverThree, which ever is valid or some if all are valid 
     dataSource.getConnectioon(); 
             
+## Developing
+Uses [lombok](https://projectlombok.org/index.html) to avoid some boilerplate code, so you probably want to use IDE plugin to support that.
