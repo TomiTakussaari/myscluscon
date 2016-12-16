@@ -28,10 +28,10 @@ class URLHelpers {
         final List<String> servers;
         final String database;
         final Map<String, List<String>> queryParameters;
-        final MysclusconDriver.DriverType driverType;
+        final MysclusconDriver.ConnectionType connectionType;
 
         String asJdbcConnectUrl(String server) {
-            return driverType.getDriverPrefix() + "://" + server + "/" + database + toQueryParametersString(queryParameters);
+            return connectionType.getDriverPrefix() + "://" + server + "/" + database + toQueryParametersString(queryParameters);
         }
 
         @Override
@@ -58,7 +58,7 @@ class URLHelpers {
             String servers = matcher.group(2);
             String database = matcher.group(3).split("\\?")[0]; //remove queryparams
             List<String> serverList = Stream.of(servers.split(",")).map(host -> host.contains(":") ? host : host + ":3306").collect(Collectors.toList());
-            return new URLInfo(protocol, serverList, database, getQueryParameters(jdbcUrl), MysclusconDriver.DriverType.fromProtocol(protocol));
+            return new URLInfo(protocol, serverList, database, getQueryParameters(jdbcUrl), MysclusconDriver.ConnectionType.fromProtocol(protocol));
 
         } else {
             throw new SQLException("Unable to parse jdbc url: " + jdbcUrl + " with regexp: " + urlParsePattern);

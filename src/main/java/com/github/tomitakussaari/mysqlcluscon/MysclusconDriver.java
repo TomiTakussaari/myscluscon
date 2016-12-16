@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import java.lang.reflect.Proxy;
 import java.sql.*;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -26,7 +25,7 @@ public class MysclusconDriver implements Driver {
 
     @RequiredArgsConstructor
     @Getter
-    public enum DriverType {
+    public enum ConnectionType {
         MARIADB_READ_CLUSTER("jdbc:mariadb", mariadbReadClusterConnectorName, urlInfo -> new ReadClusterConnectionChecker(urlInfo.queryParameters)),
         MARIADB_GALERA("jdbc:mariadb", mariadbGaleraClusterConnectorName, urlInfo -> new GaleraClusterConnectionChecker()),
         MYSQL_READ_CLUSTER("jdbc:mysql", mysqlReadClusterConnectorName, urlInfo -> new ReadClusterConnectionChecker(urlInfo.queryParameters)),
@@ -36,8 +35,8 @@ public class MysclusconDriver implements Driver {
         private final String urlPrefix;
         private final ConnectioncCheckerSupplier connectionCheckerSupplier;
 
-        static DriverType fromProtocol(String protocol) {
-            for(DriverType driver : DriverType.values()) {
+        static ConnectionType fromProtocol(String protocol) {
+            for(ConnectionType driver : ConnectionType.values()) {
                 if(driver.getUrlPrefix().equals(protocol)) {
                     return driver;
                 }
@@ -67,7 +66,7 @@ public class MysclusconDriver implements Driver {
             URLHelpers.URLInfo urlInfo = URLHelpers.parse(jdbcUrl);
             validateQueryParameters(urlInfo.queryParameters, jdbcUrl);
             final ConnectionStatus wantedConnectionStatus = getWantedConnectionStatus(urlInfo.queryParameters);
-            final ConnectionChecker connectionChecker = urlInfo.driverType.getConnectionCheckerSupplier().get(urlInfo);
+            final ConnectionChecker connectionChecker = urlInfo.connectionType.getConnectionCheckerSupplier().get(urlInfo);
             return createProxyConnection(connectionChecker, createActualConnection(urlInfo, connectionChecker, info, wantedConnectionStatus), wantedConnectionStatus);
         } else {
             return null;
@@ -83,7 +82,7 @@ public class MysclusconDriver implements Driver {
 
     @Override
     public boolean acceptsURL(String url) throws SQLException {
-        return Stream.of(DriverType.values()).map(DriverType::getUrlPrefix).anyMatch(url::startsWith);
+        return Stream.of(ConnectionType.values()).map(ConnectionType::getUrlPrefix).anyMatch(url::startsWith);
     }
 
     @Override

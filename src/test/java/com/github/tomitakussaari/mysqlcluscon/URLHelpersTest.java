@@ -84,10 +84,10 @@ public class URLHelpersTest {
 
     @Test
     public void parsesDriverType() throws SQLException {
-        assertEquals(MysclusconDriver.DriverType.MARIADB_READ_CLUSTER, URLHelpers.parse("jdbc:myscluscon:mariadb:read_cluster://serverOne/database").driverType);
-        assertEquals(MysclusconDriver.DriverType.MARIADB_GALERA, URLHelpers.parse("jdbc:myscluscon:mariadb:galera:cluster://serverOne/database").driverType);
-        assertEquals(MysclusconDriver.DriverType.MYSQL_READ_CLUSTER, URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://serverOne/database").driverType);
-        assertEquals(MysclusconDriver.DriverType.MYSQL_GALERA, URLHelpers.parse("jdbc:myscluscon:galera:cluster://serverOne/database").driverType);
+        assertEquals(MysclusconDriver.ConnectionType.MARIADB_READ_CLUSTER, URLHelpers.parse("jdbc:myscluscon:mariadb:read_cluster://serverOne/database").connectionType);
+        assertEquals(MysclusconDriver.ConnectionType.MARIADB_GALERA, URLHelpers.parse("jdbc:myscluscon:mariadb:galera:cluster://serverOne/database").connectionType);
+        assertEquals(MysclusconDriver.ConnectionType.MYSQL_READ_CLUSTER, URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://serverOne/database").connectionType);
+        assertEquals(MysclusconDriver.ConnectionType.MYSQL_GALERA, URLHelpers.parse("jdbc:myscluscon:galera:cluster://serverOne/database").connectionType);
     }
 
     @Test

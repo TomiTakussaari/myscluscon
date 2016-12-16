@@ -4,8 +4,7 @@ import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
 import com.github.tomitakussaari.mysqlcluscon.ConnectionStatus;
-import com.github.tomitakussaari.mysqlcluscon.MysclusconDriver;
-import com.github.tomitakussaari.mysqlcluscon.MysclusconDriver.DriverType;
+import com.github.tomitakussaari.mysqlcluscon.MysclusconDriver.ConnectionType;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -29,10 +28,10 @@ public class MariaDbQueryClusterIntegrationTest {
     private final Connection slave1Conn;
     private final Connection slave2Conn;
 
-    private final DriverType driverType;
+    private final ConnectionType connectionType;
 
-    public MariaDbQueryClusterIntegrationTest(DriverType driverType) throws SQLException {
-        this.driverType = driverType;
+    public MariaDbQueryClusterIntegrationTest(ConnectionType connectionType) throws SQLException {
+        this.connectionType = connectionType;
         masterConn = DriverManager.getConnection(master.getURL("test"));
         slave1Conn = DriverManager.getConnection(slave1.getURL("test"));
         slave2Conn = DriverManager.getConnection(slave2.getURL("test"));
@@ -64,8 +63,8 @@ public class MariaDbQueryClusterIntegrationTest {
     }
 
     @Parameterized.Parameters
-    public static Collection<DriverType> data() {
-        return Arrays.asList(DriverType.MARIADB_READ_CLUSTER, DriverType.MYSQL_READ_CLUSTER);
+    public static Collection<ConnectionType> data() {
+        return Arrays.asList(ConnectionType.MARIADB_READ_CLUSTER, ConnectionType.MYSQL_READ_CLUSTER);
     }
 
     @Before
@@ -77,7 +76,7 @@ public class MariaDbQueryClusterIntegrationTest {
     @Test
     public void choosesCorrectDriver() throws SQLException {
         try(Connection conn = DriverManager.getConnection(connectionUrl(), "root", "")) {
-            switch(driverType) {
+            switch(connectionType) {
                 case MARIADB_READ_CLUSTER:
                     assertEquals("MariaDB connector/J", conn.getMetaData().getDriverName());
                     break;
@@ -85,7 +84,7 @@ public class MariaDbQueryClusterIntegrationTest {
                     assertEquals("MySQL Connector Java", conn.getMetaData().getDriverName());
                     break;
                 default:
-                    fail("unkonwn drivertype: "+driverType);
+                    fail("unkonwn drivertype: "+ connectionType);
             }
         }
     }
@@ -181,7 +180,7 @@ public class MariaDbQueryClusterIntegrationTest {
 
 
     private String connectionUrl() {
-        return driverType.getUrlPrefix()+"://localhost:" + slave1.getPort() + ",localhost:" + slave2.getPort() + "/test";
+        return connectionType.getUrlPrefix()+"://localhost:" + slave1.getPort() + ",localhost:" + slave2.getPort() + "/test";
     }
 
     @AfterClass

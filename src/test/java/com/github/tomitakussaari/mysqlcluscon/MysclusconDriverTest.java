@@ -354,7 +354,7 @@ public class MysclusconDriverTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void driverTypeForUnknownValue() {
-        MysclusconDriver.DriverType.fromProtocol("unknown");
+        MysclusconDriver.ConnectionType.fromProtocol("unknown");
     }
 
     private void expectConnection(String key, Supplier<Connection> connectionSupplier) {
