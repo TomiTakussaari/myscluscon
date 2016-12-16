@@ -4,52 +4,90 @@ import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
 import com.github.tomitakussaari.mysqlcluscon.ConnectionStatus;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import com.github.tomitakussaari.mysqlcluscon.MysclusconDriver;
+import com.github.tomitakussaari.mysqlcluscon.MysclusconDriver.DriverType;
+import org.junit.*;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import static org.junit.Assert.*;
 
+@RunWith(Parameterized.class)
 public class MariaDbQueryClusterIntegrationTest {
 
     private static List<DB> dbs = new ArrayList<>();
     private static DBConfigurationBuilder master;
     private static DBConfigurationBuilder slave1;
     private static DBConfigurationBuilder slave2;
-    private static Connection masterConn;
-    private static Connection slave1Conn;
-    private static Connection slave2Conn;
+    private final Connection masterConn;
+    private final Connection slave1Conn;
+    private final Connection slave2Conn;
 
-    @BeforeClass
-    public static void init() throws ManagedProcessException, SQLException {
-        master = createDb(true, 1);
-        slave1 = createDb(false, 2);
-        slave2 = createDb(false, 3);
+    private final DriverType driverType;
+
+    public MariaDbQueryClusterIntegrationTest(DriverType driverType) throws SQLException {
+        this.driverType = driverType;
         masterConn = DriverManager.getConnection(master.getURL("test"));
         slave1Conn = DriverManager.getConnection(slave1.getURL("test"));
         slave2Conn = DriverManager.getConnection(slave2.getURL("test"));
-        try (PreparedStatement statement = masterConn.prepareStatement("SHOW MASTER STATUS");
-             ResultSet resultSet = statement.executeQuery()) {
-            if (resultSet.next()) {
-                String masterFile = resultSet.getString("file");
-                Integer masterPos = resultSet.getInt("Position");
-                joinSlave(slave1Conn, masterFile, masterPos);
-                joinSlave(slave2Conn, masterFile, masterPos);
-            } else {
-                fail("master did not start");
+    }
+
+    @BeforeClass
+    public static void initDatabases() throws ManagedProcessException, SQLException {
+        master = createDb(true, 1);
+        slave1 = createDb(false, 2);
+        slave2 = createDb(false, 3);
+
+        try (Connection mConn = DriverManager.getConnection(master.getURL("test"));
+            Connection s1Conn = DriverManager.getConnection(slave1.getURL("test"));
+            Connection s2Conn = DriverManager.getConnection(slave2.getURL("test"))
+        ) {
+
+            try (PreparedStatement statement = mConn.prepareStatement("SHOW MASTER STATUS");
+                 ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    String masterFile = resultSet.getString("file");
+                    Integer masterPos = resultSet.getInt("Position");
+                    joinSlave(s1Conn, masterFile, masterPos);
+                    joinSlave(s2Conn, masterFile, masterPos);
+                } else {
+                    fail("master was not started");
+                }
             }
         }
+    }
+
+    @Parameterized.Parameters
+    public static Collection<DriverType> data() {
+        return Arrays.asList(DriverType.MARIADB_READ_CLUSTER, DriverType.MYSQL_READ_CLUSTER);
     }
 
     @Before
     public void cleanUp() throws SQLException {
         executeStatement("START SLAVE;", slave1Conn);
         executeStatement("START SLAVE;", slave2Conn);
+    }
+
+    @Test
+    public void choosesCorrectDriver() throws SQLException {
+        try(Connection conn = DriverManager.getConnection(connectionUrl(), "root", "")) {
+            switch(driverType) {
+                case MARIADB_READ_CLUSTER:
+                    assertEquals("MariaDB connector/J", conn.getMetaData().getDriverName());
+                    break;
+                case MYSQL_READ_CLUSTER:
+                    assertEquals("MySQL Connector Java", conn.getMetaData().getDriverName());
+                    break;
+                default:
+                    fail();
+            }
+        }
     }
 
     @Test
@@ -143,14 +181,11 @@ public class MariaDbQueryClusterIntegrationTest {
 
 
     private String connectionUrl() {
-        return "jdbc:myscluscon:mysql:read_cluster://localhost:" + slave1.getPort() + ",localhost:" + slave2.getPort() + "/test";
+        return driverType.getUrlPrefix()+"://localhost:" + slave1.getPort() + ",localhost:" + slave2.getPort() + "/test";
     }
 
     @AfterClass
-    public static void close() throws SQLException {
-        masterConn.close();
-        slave1Conn.close();
-        slave2Conn.close();
+    public static void closeDatabases() throws SQLException {
         dbs.forEach(db -> {
             try {
                 db.stop();
@@ -158,6 +193,13 @@ public class MariaDbQueryClusterIntegrationTest {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    @After
+    public void closeConnections() throws SQLException {
+        masterConn.close();
+        slave1Conn.close();
+        slave2Conn.close();
     }
 
     private static void joinSlave(Connection slaveConn, String masterFile, Integer masterPos) throws SQLException {

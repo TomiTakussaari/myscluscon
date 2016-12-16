@@ -2,11 +2,15 @@ package com.github.tomitakussaari.mysqlcluscon;
 
 import com.github.tomitakussaari.mysqlcluscon.galera.GaleraClusterConnectionChecker;
 import com.github.tomitakussaari.mysqlcluscon.read_cluster.ReadClusterConnectionChecker;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.lang.reflect.Proxy;
 import java.sql.*;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import static com.github.tomitakussaari.mysqlcluscon.Params.DEFAULT_CONNECT_TIMEOUT_IN_MS;
 import static com.github.tomitakussaari.mysqlcluscon.Params.MYSQL_CONNECT_TIMEOUT_PARAM;
@@ -14,6 +18,38 @@ import static com.github.tomitakussaari.mysqlcluscon.Params.MYSQL_CONNECT_TIMEOU
 public class MysclusconDriver implements Driver {
 
     private static final Logger LOGGER = Logger.getLogger(MysclusconDriver.class.getName());
+    static final String mysqlReadClusterConnectorName = "jdbc:myscluscon:mysql:read_cluster";
+    static final String galeraClusterConnectorName = "jdbc:myscluscon:galera:cluster";
+
+    static final String mariadbReadClusterConnectorName = "jdbc:myscluscon:mariadb:read_cluster";
+    static final String mariadbGaleraClusterConnectorName = "jdbc:myscluscon:mariadb:galera:cluster";
+
+    @RequiredArgsConstructor
+    @Getter
+    public enum DriverType {
+        MARIADB_READ_CLUSTER("jdbc:mariadb", mariadbReadClusterConnectorName, urlInfo -> new ReadClusterConnectionChecker(urlInfo.queryParameters)),
+        MARIADB_GALERA("jdbc:mariadb", mariadbGaleraClusterConnectorName, urlInfo -> new GaleraClusterConnectionChecker()),
+        MYSQL_READ_CLUSTER("jdbc:mysql", mysqlReadClusterConnectorName, urlInfo -> new ReadClusterConnectionChecker(urlInfo.queryParameters)),
+        MYSQL_GALERA("jdbc:mysql", galeraClusterConnectorName, urlInfo -> new GaleraClusterConnectionChecker());
+
+        private final String driverPrefix;
+        private final String urlPrefix;
+        private final ConnectioncCheckerSupplier connectionCheckerSupplier;
+
+        static DriverType fromProtocol(String protocol) {
+            for(DriverType driver : DriverType.values()) {
+                if(driver.getUrlPrefix().equals(protocol)) {
+                    return driver;
+                }
+            }
+            throw new IllegalArgumentException("Unknown protocol: "+protocol);
+        }
+
+        @FunctionalInterface
+        interface ConnectioncCheckerSupplier {
+            ConnectionChecker get(URLHelpers.URLInfo urlInfo);
+        }
+    }
 
     static {
         try {
@@ -23,9 +59,6 @@ public class MysclusconDriver implements Driver {
         }
     }
 
-    static final String mysqlReadClusterConnectorName = "jdbc:myscluscon:mysql:read_cluster";
-    static final String galeraClusterConnectorName = "jdbc:myscluscon:galera:cluster";
-
     private final ServerBlackList serverBlackList = new ServerBlackList();
 
     @Override
@@ -34,7 +67,7 @@ public class MysclusconDriver implements Driver {
             URLHelpers.URLInfo urlInfo = URLHelpers.parse(jdbcUrl);
             validateQueryParameters(urlInfo.queryParameters, jdbcUrl);
             final ConnectionStatus wantedConnectionStatus = getWantedConnectionStatus(urlInfo.queryParameters);
-            final ConnectionChecker connectionChecker = chooseConnectionChecker(urlInfo);
+            final ConnectionChecker connectionChecker = urlInfo.driverType.getConnectionCheckerSupplier().get(urlInfo);
             return createProxyConnection(connectionChecker, createActualConnection(urlInfo, connectionChecker, info, wantedConnectionStatus), wantedConnectionStatus);
         } else {
             return null;
@@ -50,7 +83,7 @@ public class MysclusconDriver implements Driver {
 
     @Override
     public boolean acceptsURL(String url) throws SQLException {
-        return url.startsWith(mysqlReadClusterConnectorName) || url.startsWith(galeraClusterConnectorName);
+        return Stream.of(DriverType.values()).map(DriverType::getUrlPrefix).anyMatch(url::startsWith);
     }
 
     @Override
@@ -150,16 +183,6 @@ public class MysclusconDriver implements Driver {
 
     protected Connection openRealConnection(Properties info, String connectUrl) throws SQLException {
         return DriverManager.getConnection(connectUrl, info);
-    }
-
-
-    ConnectionChecker chooseConnectionChecker(URLHelpers.URLInfo urlInfo) {
-        LOGGER.fine(() -> "Parsed Protocol: " + urlInfo.protocol + " from url" + urlInfo);
-        switch (urlInfo.protocol) {
-            case mysqlReadClusterConnectorName: return new ReadClusterConnectionChecker(urlInfo.queryParameters);
-            case galeraClusterConnectorName:    return new GaleraClusterConnectionChecker();
-            default:                            throw new UnsupportedOperationException("Unsupported protocol: "+urlInfo.protocol);
-        }
     }
 
     Connection createProxyConnection(final ConnectionChecker connectionChecker, Connection actualConnection, final ConnectionStatus wantedConnectionStatus) {

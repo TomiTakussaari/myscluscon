@@ -14,11 +14,15 @@ JDBC Driver for always connecting to valid server in your Galera or MariaDb/Mysq
     - Do note that Connections created via myscluscon do not switch to another server when server is no longer valid, you need to do it manually
     - However, most connection pools notice this, and can then replace faulty connections with proper one automatically before giving connections to your code
 - Standardish JDBC API
-- Java8, no other runtime dependencies (but requires jdbc driver supporting jdbc:mysql scheme)
+- Java8, no other runtime dependencies (but requires jdbc driver supporting jdbc:mysql and/or jdbc:mariadb schemes)
 
 ### Supported schemas
-- jdbc:myscluscon:mysql:read_cluster - for connecting to read only cluster
-- jdbc:myscluscon:galera:cluster - for connecting to Galera cluster
+Use either Mysql or Mariadb scheme, depending on your JDBC driver
+- jdbc:myscluscon:mysql:read_cluster - for connecting to read only cluster using ```MySQL Connector Java```driver
+- jdbc:myscluscon:galera:cluster - for connecting to Galera cluster using ```MySQL Connector Java``` driver
+- jdbc:myscluscon:mariadb:read_cluster - for connecting to read only cluster using ```MariaDB connector/J``` driver
+- jdbc:myscluscon:mariadb:galera:cluster - for connecting to Galera cluster using ```MariaDB connector/J``` driver
+
       
 ## Why
 - There did not seem to be existing solution for this kind of functionality

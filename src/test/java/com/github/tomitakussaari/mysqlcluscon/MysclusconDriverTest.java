@@ -352,11 +352,6 @@ public class MysclusconDriverTest {
         assertNotNull(driver.getParentLogger());
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void unsupportedProtocolResultsInUnsupportedOperationException() {
-        driver.chooseConnectionChecker(new URLHelpers.URLInfo("foobar", null, null, null));
-    }
-
     private void expectConnection(String key, Supplier<Connection> connectionSupplier) {
         configurableDriver.connectionsToConnect.put(key, connectionSupplier);
     }

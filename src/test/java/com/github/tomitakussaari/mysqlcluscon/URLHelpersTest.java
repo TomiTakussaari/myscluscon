@@ -83,6 +83,22 @@ public class URLHelpersTest {
     }
 
     @Test
+    public void parsesDriverType() throws SQLException {
+        assertEquals(MysclusconDriver.DriverType.MARIADB_READ_CLUSTER, URLHelpers.parse("jdbc:myscluscon:mariadb:read_cluster://serverOne/database").driverType);
+        assertEquals(MysclusconDriver.DriverType.MARIADB_GALERA, URLHelpers.parse("jdbc:myscluscon:mariadb:galera:cluster://serverOne/database").driverType);
+        assertEquals(MysclusconDriver.DriverType.MYSQL_READ_CLUSTER, URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://serverOne/database").driverType);
+        assertEquals(MysclusconDriver.DriverType.MYSQL_GALERA, URLHelpers.parse("jdbc:myscluscon:galera:cluster://serverOne/database").driverType);
+    }
+
+    @Test
+    public void choosesDriverUrl() throws SQLException {
+        assertEquals("jdbc:mariadb://localhost:3306/database", URLHelpers.parse("jdbc:myscluscon:mariadb:read_cluster://serverOne/database").asJdbcConnectUrl("localhost:3306"));
+        assertEquals("jdbc:mariadb://localhost:3306/database", URLHelpers.parse("jdbc:myscluscon:mariadb:galera:cluster://serverOne/database").asJdbcConnectUrl("localhost:3306"));
+        assertEquals("jdbc:mysql://localhost:3306/database", URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://serverOne/database").asJdbcConnectUrl("localhost:3306"));
+        assertEquals("jdbc:mysql://localhost:3306/database", URLHelpers.parse("jdbc:myscluscon:galera:cluster://serverOne/database").asJdbcConnectUrl("localhost:3306"));
+    }
+
+    @Test
     public void parsesSingleServerFromUrl() throws SQLException {
         assertEquals("[serverOne:3306]", URLHelpers.parse("jdbc:myscluscon:mysql:read_cluster://serverOne/database").servers.toString());
     }
