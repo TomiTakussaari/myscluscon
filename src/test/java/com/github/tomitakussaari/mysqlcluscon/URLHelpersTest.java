@@ -130,4 +130,9 @@ public class URLHelpersTest {
         String url = "jdbc:myscluscon:mysql:read_cluster://this.part.is.ignored:12345/database?foobar=true&barfoo=false";
         assertEquals("jdbc:mysql://server.domain.fi:12345/database?foobar=true&barfoo=false", URLHelpers.parse(url).asJdbcConnectUrl("server.domain.fi:12345"));
     }
+
+    @Test(expected = SQLException.class)
+    public void decodeWithInvalidEncodingThrowsSqlException() throws SQLException {
+        URLHelpers.decode("%C3%B6%C3%A4%C3%A5", "invalid_encoding");
+    }
 }

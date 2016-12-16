@@ -352,6 +352,11 @@ public class MysclusconDriverTest {
         assertNotNull(driver.getParentLogger());
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void driverTypeForUnknownValue() {
+        MysclusconDriver.DriverType.fromProtocol("unknown");
+    }
+
     private void expectConnection(String key, Supplier<Connection> connectionSupplier) {
         configurableDriver.connectionsToConnect.put(key, connectionSupplier);
     }

@@ -85,7 +85,7 @@ public class MariaDbQueryClusterIntegrationTest {
                     assertEquals("MySQL Connector Java", conn.getMetaData().getDriverName());
                     break;
                 default:
-                    fail();
+                    fail("unkonwn drivertype: "+driverType);
             }
         }
     }

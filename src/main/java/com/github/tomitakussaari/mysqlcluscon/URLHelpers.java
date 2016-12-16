@@ -85,19 +85,19 @@ class URLHelpers {
         final String[] pairs = url.substring(startOfQueryParams).split("&");
         for (String pair : pairs) {
             final int idx = pair.indexOf("=");
-            final String key = idx > 0 ? decode(pair.substring(0, idx)) : pair;
+            final String key = idx > 0 ? decode(pair.substring(0, idx), "UTF-8") : pair;
             List<String> values = queryParameters.computeIfAbsent(key, (k) -> new LinkedList<>());
-            final String value = idx > 0 && pair.length() > idx + 1 ? decode(pair.substring(idx + 1)) : null;
+            final String value = idx > 0 && pair.length() > idx + 1 ? decode(pair.substring(idx + 1), "UTF-8") : null;
             values.add(value);
         }
         return queryParameters;
     }
 
-    private static String decode(String substring) throws SQLException {
+    static String decode(String encoded, String encoding) throws SQLException {
         try {
-            return URLDecoder.decode(substring, "UTF-8");
+            return URLDecoder.decode(encoded, encoding);
         } catch (UnsupportedEncodingException e) {
-            throw new SQLException("Unable to decode url using UTF-8: " + substring, e);
+            throw new SQLException("Unable to decode url using "+encoding+": " + encoded, e);
         }
     }
 
