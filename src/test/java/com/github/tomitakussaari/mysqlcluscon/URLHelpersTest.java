@@ -21,6 +21,16 @@ public class URLHelpersTest {
     }
 
     @Test
+    public void parsesQueryStringToParamsAndBackToString() throws SQLException {
+        String queryParams = "characterEncoding=UTF-8&connectTimeout=500&socketTimeout=60000";
+        URLHelpers.URLInfo info = URLHelpers.parse("jdbc:myscluscon:galera:cluster://foo,bar,faba/db?"+queryParams);
+        assertEquals("UTF-8", info.queryParameters.get("characterEncoding").get(0));
+        assertEquals("500", info.queryParameters.get("connectTimeout").get(0));
+        assertEquals("60000", info.queryParameters.get("socketTimeout").get(0));
+        assertEquals("jdbc:mysql://foo/db?"+queryParams, info.asJdbcConnectUrl("foo"));
+    }
+
+    @Test
     public void toQueryParametersStringWithMultipleValues() {
         Map<String, List<String>> queryParams = new TreeMap<>();
         queryParams.put("foo", Arrays.asList("1", "2"));

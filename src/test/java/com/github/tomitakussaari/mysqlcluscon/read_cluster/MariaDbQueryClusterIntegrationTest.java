@@ -84,7 +84,7 @@ public class MariaDbQueryClusterIntegrationTest {
                     assertEquals("MySQL Connector Java", conn.getMetaData().getDriverName());
                     break;
                 default:
-                    fail("unkonwn drivertype: "+ connectionType);
+                    fail("Unknown driver type: "+ connectionType);
             }
         }
     }
@@ -106,11 +106,23 @@ public class MariaDbQueryClusterIntegrationTest {
 
     @Test
     public void mysclusconDriverChoosesSlaveThatIsRunningOverOneThatIsStopped() throws SQLException {
-        executeStatement("STOP SLAVE;", slave2Conn);
+        stopSlaveAndVerifyItIsNotUsed(slave2Conn, slave2.getPort(), slave1.getPort());
+    }
+
+    @Test
+    public void mysclusconDriverStartsUsingSlaveAgainAfterItIsUp() throws SQLException {
+        stopSlaveAndVerifyItIsNotUsed(slave2Conn, slave2.getPort(), slave1.getPort());
+        executeStatement("START SLAVE;", slave2Conn);
+        stopSlaveAndVerifyItIsNotUsed(slave1Conn, slave1.getPort(), slave2.getPort());
+    }
+
+    private void stopSlaveAndVerifyItIsNotUsed(Connection slaveConn, int notExpectedSlavePort, int expectedSlavePort) throws SQLException {
+        executeStatement("STOP SLAVE;", slaveConn);
         for (int i = 0; i < 10; i++) {
             try (Connection conn = DriverManager.getConnection(connectionUrl(), "root", "")) {
                 String url = conn.getMetaData().getURL();
-                assertTrue(url, url.contains(slave1.getPort() + ""));
+                assertFalse(url, url.contains(notExpectedSlavePort + ""));
+                assertTrue(url, url.contains(expectedSlavePort + ""));
             }
         }
     }
