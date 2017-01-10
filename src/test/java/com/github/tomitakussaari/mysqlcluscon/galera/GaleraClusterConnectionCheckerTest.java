@@ -13,6 +13,7 @@ import java.sql.Statement;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -35,11 +36,12 @@ public class GaleraClusterConnectionCheckerTest {
         when(resultSet.next()).thenReturn(true);
         when(resultSet.getString("Value")).thenReturn("ON");
         assertEquals(ConnectionStatus.OK, clusterConnectionChecker.connectionStatus(conn));
+        verify(resultSet).close();
+        verify(statement).close();
     }
 
     @Test
     public void connectionReportsItsNotValid() throws SQLException {
-        when(conn.createStatement()).thenReturn(statement);
         when(conn.isValid(anyInt())).thenReturn(false);
         assertEquals(ConnectionStatus.DEAD, clusterConnectionChecker.connectionStatus(conn));
     }
@@ -52,6 +54,9 @@ public class GaleraClusterConnectionCheckerTest {
         when(resultSet.next()).thenReturn(true);
         when(resultSet.getString("Value")).thenReturn("OFF");
         assertEquals(ConnectionStatus.STOPPED, clusterConnectionChecker.connectionStatus(conn));
+        verify(resultSet).close();
+        verify(statement).close();
+
     }
 
     @Test

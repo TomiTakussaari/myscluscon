@@ -22,12 +22,13 @@ public class GaleraClusterConnectionChecker implements ConnectionChecker {
             }
             try (Statement stmt = conn.createStatement()) {
                 stmt.setQueryTimeout(queryTimeoutInSeconds);
-                ResultSet rs = stmt.executeQuery("SHOW STATUS like 'wsrep_ready'");
-                if(rs.next()) {
-                    if("ON".equalsIgnoreCase(rs.getString("Value"))) {
-                        return ConnectionStatus.OK;
+                try(ResultSet rs = stmt.executeQuery("SHOW STATUS like 'wsrep_ready'")) {
+                    if(rs.next()) {
+                        if("ON".equalsIgnoreCase(rs.getString("Value"))) {
+                            return ConnectionStatus.OK;
+                        }
+                        return ConnectionStatus.STOPPED;
                     }
-                    return ConnectionStatus.STOPPED;
                 }
             }
         } catch (Exception e) {
