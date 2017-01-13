@@ -2,6 +2,7 @@ package com.github.tomitakussaari.mysqlcluscon;
 
 import com.github.tomitakussaari.mysqlcluscon.galera.GaleraClusterConnectionChecker;
 import com.github.tomitakussaari.mysqlcluscon.read_cluster.ReadClusterConnectionChecker;
+import com.google.auto.service.AutoService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -14,6 +15,7 @@ import java.util.stream.Stream;
 import static com.github.tomitakussaari.mysqlcluscon.Params.DEFAULT_CONNECT_TIMEOUT_IN_MS;
 import static com.github.tomitakussaari.mysqlcluscon.Params.MYSQL_CONNECT_TIMEOUT_PARAM;
 
+@AutoService(java.sql.Driver.class)
 public class MysclusconDriver implements Driver {
 
     private static final Logger LOGGER = Logger.getLogger(MysclusconDriver.class.getName());

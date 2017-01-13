@@ -10,10 +10,11 @@ import java.sql.*;
 import java.util.*;
 import java.util.function.Supplier;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MysclusconDriverTest {
@@ -33,8 +34,8 @@ public class MysclusconDriverTest {
         mockGaleraHealthChek();
 
         Connection connection = driver.connect("jdbc:myscluscon:galera:cluster://A,B,C/", new Properties());
-        assertNotNull(connection);
-        assertTrue(connection.isValid(1));
+        assertThat(connection).isNotNull();
+        assertThat(connection.isValid(1)).isTrue();
 
         verifyConnectionIsUsable(connection);
     }
@@ -52,7 +53,13 @@ public class MysclusconDriverTest {
         ResultSet mockRs = Mockito.mock(ResultSet.class);
         when(mockConn.prepareStatement("SELECT * FROM FOOBAR")).thenReturn(mockPs);
         when(mockPs.executeQuery()).thenReturn(mockRs);
-        assertSame(mockRs, connection.prepareStatement("SELECT * FROM FOOBAR").executeQuery());
+        assertThat(connection.prepareStatement("SELECT * FROM FOOBAR").executeQuery()).isSameAs(mockRs);
+    }
+
+    @Test
+    public void canBeLoadedWithServiceLoader() {
+        ServiceLoader<Driver> allDrivers = ServiceLoader.load(Driver.class);
+        assertThat(allDrivers).hasAtLeastOneElementOfType(MysclusconDriver.class);
     }
 
     @Test
@@ -60,7 +67,7 @@ public class MysclusconDriverTest {
         mockGaleraHealthChek();
 
         driver.connect("jdbc:myscluscon:galera:cluster://A:1234,B:1234,C:1234/?foo=bar&bar=foo", new Properties());
-        assertEquals(1, driver.connectUrls.size());
+        assertThat(driver.connectUrls).hasSize(1);
     }
 
     @Test
@@ -68,8 +75,8 @@ public class MysclusconDriverTest {
         mockMysqlReadClusterHealthCheck();
 
         Connection connection = driver.connect("jdbc:myscluscon:mysql:read_cluster://A,B,C/", new Properties());
-        assertNotNull(connection);
-        assertTrue(connection.isValid(1));
+        assertThat(connection).isNotNull();
+        assertThat(connection.isValid(1)).isTrue();
 
         verifyConnectionIsUsable(connection);
     }
@@ -95,9 +102,9 @@ public class MysclusconDriverTest {
         when(mockResultSet.next()).thenReturn(true);
 
         driver.connect("jdbc:myscluscon:mysql:read_cluster://A:1234,B:1234,C:1234/?foo=bar&bar=foo", new Properties());
-        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://A:1234/?foo=bar&bar=foo&connectTimeout=500"));
-        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://B:1234/?foo=bar&bar=foo&connectTimeout=500"));
-        assertTrue(driver.connectUrls.toString(), driver.connectUrls.contains("jdbc:mysql://C:1234/?foo=bar&bar=foo&connectTimeout=500"));
+        assertThat(driver.connectUrls.contains("jdbc:mysql://A:1234/?foo=bar&bar=foo&connectTimeout=500")).isTrue();
+        assertThat(driver.connectUrls.contains("jdbc:mysql://B:1234/?foo=bar&bar=foo&connectTimeout=500")).isTrue();
+        assertThat(driver.connectUrls.contains("jdbc:mysql://C:1234/?foo=bar&bar=foo&connectTimeout=500")).isTrue();
     }
 
     @Test
@@ -116,14 +123,14 @@ public class MysclusconDriverTest {
 
     @Test
     public void acceptsUrl() throws SQLException {
-        assertFalse(driver.acceptsURL("jdbc:mysql://127.0.0.1"));
-        assertTrue(driver.acceptsURL(MysclusconDriver.galeraClusterConnectorName + "://127.0.0.1"));
-        assertTrue(driver.acceptsURL(MysclusconDriver.mysqlReadClusterConnectorName + "://127.0.0.1"));
+        assertThat(driver.acceptsURL("jdbc:mysql://127.0.0.1")).isFalse();
+        assertThat(driver.acceptsURL(MysclusconDriver.galeraClusterConnectorName + "://127.0.0.1")).isTrue();
+        assertThat(driver.acceptsURL(MysclusconDriver.mysqlReadClusterConnectorName + "://127.0.0.1")).isTrue();
     }
 
     @Test
     public void returnsNullForNormalMysqlConnectUrl() throws SQLException {
-        assertNull(driver.connect("jdbc:mysql://A:1234?foo=bar&bar=foo", new Properties()));
+        assertThat(driver.connect("jdbc:mysql://A:1234?foo=bar&bar=foo", new Properties())).isNull();
     }
 
     @Test
@@ -132,7 +139,7 @@ public class MysclusconDriverTest {
         Connection conn = Mockito.mock(Connection.class);
         Connection proxyConnection = driver.createProxyConnection(checker, conn, ConnectionStatus.STOPPED);
         when(checker.connectionStatus(conn, 10)).thenReturn(ConnectionStatus.OK);
-        assertTrue(proxyConnection.isValid(10));
+        assertThat(proxyConnection.isValid(10)).isTrue();
         verify(checker).connectionStatus(conn, 10);
     }
 
@@ -142,7 +149,7 @@ public class MysclusconDriverTest {
         Connection conn = Mockito.mock(Connection.class);
         Connection proxyConnection = driver.createProxyConnection(checker, conn, ConnectionStatus.OK);
         when(checker.connectionStatus(conn, 10)).thenReturn(ConnectionStatus.BEHIND);
-        assertFalse(proxyConnection.isValid(10));
+        assertThat(proxyConnection.isValid(10)).isFalse();
         verify(checker).connectionStatus(conn, 10);
     }
 
@@ -271,7 +278,7 @@ public class MysclusconDriverTest {
         Collections.shuffle(connections);
 
         Optional<ConnectionInfo> bestConnection = driver.findBestConnection(connections, ConnectionStatus.OK);
-        assertFalse(bestConnection.isPresent());
+        assertThat(bestConnection.isPresent()).isFalse();
     }
 
     @Test
@@ -303,7 +310,7 @@ public class MysclusconDriverTest {
         connections.add(new ConnectionInfo(null, (conn, t) -> ConnectionStatus.DEAD));
 
         Optional<ConnectionInfo> bestConnection = driver.findBestConnection(connections, ConnectionStatus.STOPPED);
-        assertFalse(bestConnection.toString(), bestConnection.isPresent());
+        assertThat(bestConnection.isPresent()).isFalse();
     }
 
     @Test
@@ -349,7 +356,7 @@ public class MysclusconDriverTest {
 
     @Test
     public void parentLoggerIsReturned() {
-        assertNotNull(driver.getParentLogger());
+        assertThat(driver.getParentLogger()).isNotNull();
     }
 
     @Test(expected = IllegalArgumentException.class)
