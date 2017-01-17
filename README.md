@@ -87,4 +87,5 @@ Following queryparameters can be used to configure myscluscon:
     dataSource.getConnectioon(); 
             
 ## Developing
-Uses [lombok](https://projectlombok.org/index.html) to avoid some boilerplate code, so you probably want to use IDE plugin to support that.
+- Uses [lombok](https://projectlombok.org/index.html) to avoid some boilerplate code, so you probably want to use IDE plugin to support that.
+- Few integration tests start embedded mariadb. On MacOs you do need atleast openssl library so that mariadb starts
