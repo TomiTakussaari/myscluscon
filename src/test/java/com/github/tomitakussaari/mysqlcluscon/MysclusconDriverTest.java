@@ -137,7 +137,7 @@ public class MysclusconDriverTest {
     public void proxiedConnectionForwardsIsValidCallToConnectionChecker() throws SQLException {
         ConnectionChecker checker = Mockito.mock(ConnectionChecker.class);
         Connection conn = Mockito.mock(Connection.class);
-        Connection proxyConnection = driver.createProxyConnection(checker, conn, ConnectionStatus.STOPPED);
+        Connection proxyConnection = driver.createProxyConnection(checker, conn, ConnectionStatus.STOPPED, ConnectionStatus.STOPPED);
         when(checker.connectionStatus(conn, 10)).thenReturn(ConnectionStatus.OK);
         assertThat(proxyConnection.isValid(10)).isTrue();
         verify(checker).connectionStatus(conn, 10);
@@ -147,7 +147,38 @@ public class MysclusconDriverTest {
     public void connectionWithStatusBehindIsNotValidWhenWeWantAtleastOk() throws SQLException {
         ConnectionChecker checker = Mockito.mock(ConnectionChecker.class);
         Connection conn = Mockito.mock(Connection.class);
-        Connection proxyConnection = driver.createProxyConnection(checker, conn, ConnectionStatus.OK);
+        Connection proxyConnection = driver.createProxyConnection(checker, conn, ConnectionStatus.OK, ConnectionStatus.BEHIND);
+        when(checker.connectionStatus(conn, 10)).thenReturn(ConnectionStatus.BEHIND);
+        assertThat(proxyConnection.isValid(10)).isFalse();
+        verify(checker).connectionStatus(conn, 10);
+    }
+
+    @Test
+    public void connectionWithStatusBehindIsValidWhenWeWantAtleastBehindAndItWasBehindOnOpen() throws SQLException {
+        ConnectionChecker checker = Mockito.mock(ConnectionChecker.class);
+        Connection conn = Mockito.mock(Connection.class);
+        Connection proxyConnection = driver.createProxyConnection(checker, conn, ConnectionStatus.BEHIND, ConnectionStatus.BEHIND);
+        when(checker.connectionStatus(conn, 10)).thenReturn(ConnectionStatus.BEHIND);
+        assertThat(proxyConnection.isValid(10)).isTrue();
+        verify(checker).connectionStatus(conn, 10);
+    }
+
+    @Test
+    public void connectionWithStatusStoppedIsNotValidWhenWeWantAtleastBehindAndItWasOKOnOpen() throws SQLException {
+        ConnectionChecker checker = Mockito.mock(ConnectionChecker.class);
+        Connection conn = Mockito.mock(Connection.class);
+        Connection proxyConnection = driver.createProxyConnection(checker, conn, ConnectionStatus.BEHIND, ConnectionStatus.OK);
+        when(checker.connectionStatus(conn, 10)).thenReturn(ConnectionStatus.STOPPED);
+        assertThat(proxyConnection.isValid(10)).isFalse();
+        verify(checker).connectionStatus(conn, 10);
+    }
+
+    @Test
+    public void connectionWithStatusBehindIsNotValidIfItWasOriginallyOkEvenIfWeWantAtleastBehind() throws SQLException {
+        //so that "best possible" connection is always used (some other host might be OK)
+        ConnectionChecker checker = Mockito.mock(ConnectionChecker.class);
+        Connection conn = Mockito.mock(Connection.class);
+        Connection proxyConnection = driver.createProxyConnection(checker, conn, ConnectionStatus.BEHIND, ConnectionStatus.OK);
         when(checker.connectionStatus(conn, 10)).thenReturn(ConnectionStatus.BEHIND);
         assertThat(proxyConnection.isValid(10)).isFalse();
         verify(checker).connectionStatus(conn, 10);

@@ -1,5 +1,6 @@
 package com.github.tomitakussaari.mysqlcluscon;
 
+import com.github.tomitakussaari.mysqlcluscon.URLHelpers.URLInfo;
 import com.github.tomitakussaari.mysqlcluscon.galera.GaleraClusterConnectionChecker;
 import com.github.tomitakussaari.mysqlcluscon.read_cluster.ReadClusterConnectionChecker;
 import com.google.auto.service.AutoService;
@@ -48,7 +49,7 @@ public class MysclusconDriver implements Driver {
 
         @FunctionalInterface
         interface ConnectioncCheckerSupplier {
-            ConnectionChecker get(URLHelpers.URLInfo urlInfo);
+            ConnectionChecker get(URLInfo urlInfo);
         }
     }
 
@@ -65,11 +66,12 @@ public class MysclusconDriver implements Driver {
     @Override
     public Connection connect(String jdbcUrl, Properties info) throws SQLException {
         if(acceptsURL(jdbcUrl)) {
-            URLHelpers.URLInfo urlInfo = URLHelpers.parse(jdbcUrl);
+            URLInfo urlInfo = URLHelpers.parse(jdbcUrl);
             validateQueryParameters(urlInfo.queryParameters, jdbcUrl);
             final ConnectionStatus wantedConnectionStatus = getWantedConnectionStatus(urlInfo.queryParameters);
             final ConnectionChecker connectionChecker = urlInfo.connectionType.getConnectionCheckerSupplier().get(urlInfo);
-            return createProxyConnection(connectionChecker, createActualConnection(urlInfo, connectionChecker, info, wantedConnectionStatus), wantedConnectionStatus);
+            final ConnectionInfo connectionInfo = createActualConnection(urlInfo, connectionChecker, info, wantedConnectionStatus);
+            return createProxyConnection(connectionChecker, connectionInfo.getConnection(), wantedConnectionStatus, connectionInfo.getStatus());
         } else {
             return null;
         }
@@ -112,32 +114,32 @@ public class MysclusconDriver implements Driver {
         return LOGGER;
     }
 
-    private Connection createActualConnection(URLHelpers.URLInfo urlInfo, ConnectionChecker connectionChecker, Properties info, ConnectionStatus leastUsableConnection) throws SQLException {
+    private ConnectionInfo createActualConnection(URLInfo urlInfo, ConnectionChecker connectionChecker, Properties info, ConnectionStatus leastUsableConnection) throws SQLException {
         final List<String> servers = serverBlackList.withoutBlackListed(urlInfo.servers);
         return tryToOpenConnectionToValidServer(servers, connectionChecker, info, urlInfo, leastUsableConnection)
                 .orElseThrow(() -> new SQLException("Unable to open connection, no valid host found from servers: " + servers));
     }
 
-    private Optional<Connection> tryToOpenConnectionToValidServer(List<String> servers, ConnectionChecker connectionChecker,
-                                                                Properties info, URLHelpers.URLInfo urlInfo,
+    private Optional<ConnectionInfo> tryToOpenConnectionToValidServer(List<String> servers, ConnectionChecker connectionChecker,
+                                                                Properties info, URLInfo urlInfo,
                                                                 ConnectionStatus wantedConnectionStatus) throws SQLException {
         LOGGER.fine(() -> "Trying to connect to servers " + servers + " from url " + urlInfo);
 
-        List<ConnectionInfo> openConnections = new ArrayList<>();
+        List<ConnectionInfo> activeConnections = new ArrayList<>();
         try {
-            for(String server: inRandomOrder(servers)) {
+            for(String server : inRandomOrder(servers)) {
                 Optional<ConnectionInfo> conn = tryOpenConnection(connectionChecker, info, urlInfo, server);
                 if(isBestPossible(conn)) {
-                    return conn.map(ConnectionInfo::getConnection);
+                    return conn;
                 } else {
-                    blackListedIfServerDown(server, conn).ifPresent(openConnections::add);
+                    asBlackListedIfDown(server, conn).ifPresent(activeConnections::add);
                 }
             }
-            Optional<ConnectionInfo> bestConnection = findBestConnection(openConnections, wantedConnectionStatus);
-            bestConnection.ifPresent(openConnections::remove);
-            return bestConnection.map(ConnectionInfo::getConnection);
+            Optional<ConnectionInfo> bestConnection = findBestConnection(activeConnections, wantedConnectionStatus);
+            bestConnection.ifPresent(activeConnections::remove);
+            return bestConnection;
         } finally {
-            openConnections.forEach(ConnectionInfo::close);
+            activeConnections.forEach(ConnectionInfo::close);
         }
     }
 
@@ -147,7 +149,7 @@ public class MysclusconDriver implements Driver {
         return randomOrderServers;
     }
 
-    private Optional<ConnectionInfo> blackListedIfServerDown(String server, Optional<ConnectionInfo> conn) {
+    private Optional<ConnectionInfo> asBlackListedIfDown(String server, Optional<ConnectionInfo> conn) {
         if(conn.map(ConnectionInfo::getStatus).filter(ConnectionStatus.DEAD::equals).isPresent() || !conn.isPresent()) {
             serverBlackList.blackList(server);
         }
@@ -158,7 +160,7 @@ public class MysclusconDriver implements Driver {
         return conn.map(ConnectionInfo::getStatus).filter(status -> status == ConnectionStatus.OK).isPresent();
     }
 
-    private Optional<ConnectionInfo> tryOpenConnection(ConnectionChecker connectionChecker, Properties info, URLHelpers.URLInfo urlInfo, String server) {
+    private Optional<ConnectionInfo> tryOpenConnection(ConnectionChecker connectionChecker, Properties info, URLInfo urlInfo, String server) {
         return tryConnectingToHost(server, urlInfo, info).map(c -> new ConnectionInfo(c, connectionChecker));
     }
 
@@ -169,7 +171,7 @@ public class MysclusconDriver implements Driver {
             .findFirst();
     }
 
-    private Optional<Connection> tryConnectingToHost(String server, URLHelpers.URLInfo urlInfo, Properties info) {
+    private Optional<Connection> tryConnectingToHost(String server, URLInfo urlInfo, Properties info) {
         LOGGER.fine(() -> "Trying to connect to host " + server);
         final String connectUrl = urlInfo.asJdbcConnectUrl(server);
         try {
@@ -186,13 +188,14 @@ public class MysclusconDriver implements Driver {
         return DriverManager.getConnection(connectUrl, info);
     }
 
-    Connection createProxyConnection(final ConnectionChecker connectionChecker, Connection actualConnection, final ConnectionStatus wantedConnectionStatus) {
+    Connection createProxyConnection(ConnectionChecker connectionChecker, Connection realConn, ConnectionStatus wantedConnectionStatus, ConnectionStatus connectionStatusOnCreate) {
         return (Connection) Proxy.newProxyInstance(getClass().getClassLoader(), new Class[]{Connection.class}, (proxy, method, args) -> {
             switch(method.getName()) {
                 case "isValid":
-                    return connectionChecker.connectionStatus(actualConnection, (Integer) args[0]).priority >= wantedConnectionStatus.priority;
+                    ConnectionStatus currentStatus = connectionChecker.connectionStatus(realConn, (Integer) args[0]);
+                    return currentStatus.priority >= wantedConnectionStatus.priority && currentStatus.priority >= connectionStatusOnCreate.priority;
                 default:
-                    return method.invoke(actualConnection, args);
+                    return method.invoke(realConn, args);
             }
         });
     }
