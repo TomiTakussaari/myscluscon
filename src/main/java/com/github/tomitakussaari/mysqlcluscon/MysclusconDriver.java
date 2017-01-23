@@ -36,7 +36,7 @@ public class MysclusconDriver implements Driver {
 
         private final String driverPrefix;
         private final String urlPrefix;
-        private final ConnectioncCheckerSupplier connectionCheckerSupplier;
+        private final ConnectionCheckerSupplier connectionCheckerSupplier;
 
         static ConnectionType fromProtocol(String protocol) {
             for(ConnectionType driver : ConnectionType.values()) {
@@ -48,7 +48,7 @@ public class MysclusconDriver implements Driver {
         }
 
         @FunctionalInterface
-        interface ConnectioncCheckerSupplier {
+        interface ConnectionCheckerSupplier {
             ConnectionChecker get(URLInfo urlInfo);
         }
     }
@@ -132,7 +132,7 @@ public class MysclusconDriver implements Driver {
                 if(isBestPossible(conn)) {
                     return conn;
                 } else {
-                    asBlackListedIfDown(server, conn).ifPresent(activeConnections::add);
+                    addToBlackListIfDownAndReturn(server, conn).ifPresent(activeConnections::add);
                 }
             }
             Optional<ConnectionInfo> bestConnection = findBestConnection(activeConnections, wantedConnectionStatus);
@@ -149,7 +149,7 @@ public class MysclusconDriver implements Driver {
         return randomOrderServers;
     }
 
-    private Optional<ConnectionInfo> asBlackListedIfDown(String server, Optional<ConnectionInfo> conn) {
+    private Optional<ConnectionInfo> addToBlackListIfDownAndReturn(String server, Optional<ConnectionInfo> conn) {
         if(conn.map(ConnectionInfo::getStatus).filter(ConnectionStatus.DEAD::equals).isPresent() || !conn.isPresent()) {
             serverBlackList.blackList(server);
         }
@@ -190,12 +190,11 @@ public class MysclusconDriver implements Driver {
 
     Connection createProxyConnection(ConnectionChecker connectionChecker, Connection realConn, ConnectionStatus wantedConnectionStatus, ConnectionStatus connectionStatusOnCreate) {
         return (Connection) Proxy.newProxyInstance(getClass().getClassLoader(), new Class[]{Connection.class}, (proxy, method, args) -> {
-            switch(method.getName()) {
-                case "isValid":
-                    ConnectionStatus currentStatus = connectionChecker.connectionStatus(realConn, (Integer) args[0]);
-                    return currentStatus.priority >= wantedConnectionStatus.priority && currentStatus.priority >= connectionStatusOnCreate.priority;
-                default:
-                    return method.invoke(realConn, args);
+            if(method.getName().equals("isValid")) {
+                ConnectionStatus currentStatus = connectionChecker.connectionStatus(realConn, (Integer) args[0]);
+                return currentStatus.priority >= wantedConnectionStatus.priority && currentStatus.priority >= connectionStatusOnCreate.priority;
+            } else {
+                return method.invoke(realConn, args);
             }
         });
     }
