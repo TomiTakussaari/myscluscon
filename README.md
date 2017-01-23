@@ -33,20 +33,27 @@ Use either Mysql or Mariadb scheme, depending on your JDBC driver
 
 # Maven 
 
+```xml
+
     <dependency>
         <groupId>com.github.tomitakussaari</groupId>
         <artifactId>myscluscon-driver</artifactId>
         <version>3.0.0</version>
     </dependency>
 
+```
+
 ## Usage example with standard JDBC
 
-    
+```java
+
     //Connection to any valid server in mysql read cluster consisting of serverOne, serverTwo or serverThree.
     Connection connection = DriverManager.getConnection("jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,serverThree:2134/database", "username", "password");
 
     //Connection to any valid server in galera cluster consisting of serverOne, serverTwo or serverThree
     Connection connection = DriverManager.getConnection("jdbc:myscluscon:galera:cluster://serverOne,serverTwo,serverThree", "username", "password");
+
+```
 
 All queryparameters are passed untouched to jdbc:mysql driver
 
@@ -74,8 +81,9 @@ Following queryparameters can be used to configure myscluscon:
 
 ## Usage example with [HikariCP](https://github.com/brettwooldridge/HikariCP) connection pool 
             
-    Class.forName("com.mysql.jdbc.Driver"); //Load your favorite Mysql driver that understands JDBC urls which start with jdbc:mysql
-             
+
+```java
+
     HikariConfig hikariConfig = new HikariConfig();
     hikariConfig.setJdbcUrl("jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,ServerThree:2134/database");
     hikariConfig.setUsername("username");
@@ -85,6 +93,8 @@ Following queryparameters can be used to configure myscluscon:
     
     //Connection to serverOne, serverTwo or serverThree, which ever is valid or some if all are valid 
     dataSource.getConnectioon(); 
+
+```
             
 ## Developing
 - Uses [lombok](https://projectlombok.org/index.html) to avoid some boilerplate code, so you probably want to use IDE plugin to support that.
