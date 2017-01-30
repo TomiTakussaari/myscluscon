@@ -25,7 +25,7 @@ Use either Mysql or Mariadb scheme, depending on your JDBC driver
 
       
 ## Why
-- There did not seem to be existing solution for this kind of functionality
+- There did not seem to be existing solution for this kind of functionality in java
 - You can probably do the same using MysqlProxy or HAproxy (and maybe others), or via application level "DbManager" but that means you need more servers and code and (most likely) results in more complex overall architecture.
 - It might make sense to do this on driver level if all/most of the applications using your cluster use JDBC.
 - I've never written a JDBC driver, so wanted to try it out.. :)      
@@ -55,7 +55,7 @@ Use either Mysql or Mariadb scheme, depending on your JDBC driver
 
 ```
 
-All queryparameters are passed untouched to jdbc:mysql driver
+All queryparameters are passed untouched to underlying jdbc driver
 
 ## Database privileges
 
