@@ -15,32 +15,36 @@ import java.util.stream.Stream;
 
 import static com.github.tomitakussaari.mysqlcluscon.Params.DEFAULT_CONNECT_TIMEOUT_IN_MS;
 import static com.github.tomitakussaari.mysqlcluscon.Params.MYSQL_CONNECT_TIMEOUT_PARAM;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 
 @AutoService(java.sql.Driver.class)
 public class MysclusconDriver implements Driver {
 
     private static final Logger LOGGER = Logger.getLogger(MysclusconDriver.class.getName());
     static final String mysqlReadClusterConnectorName = "jdbc:myscluscon:mysql:read_cluster";
-    static final String galeraClusterConnectorName = "jdbc:myscluscon:galera:cluster";
+    static final String oldGaleraClusterConnectorName = "jdbc:myscluscon:galera:cluster";
+    static final String galeraClusterConnectorName = "jdbc:myscluscon:mysql:galera";
 
     static final String mariadbReadClusterConnectorName = "jdbc:myscluscon:mariadb:read_cluster";
-    static final String mariadbGaleraClusterConnectorName = "jdbc:myscluscon:mariadb:galera:cluster";
+    static final String oldMariadbGaleraClusterConnectorName = "jdbc:myscluscon:mariadb:galera:cluster";
+    static final String mariadbGaleraClusterConnectorName = "jdbc:myscluscon:mariadb:galera";
 
     @RequiredArgsConstructor
     @Getter
     public enum ConnectionType {
-        MARIADB_READ_CLUSTER("jdbc:mariadb", mariadbReadClusterConnectorName, urlInfo -> new ReadClusterConnectionChecker(urlInfo.queryParameters)),
-        MARIADB_GALERA("jdbc:mariadb", mariadbGaleraClusterConnectorName, urlInfo -> new GaleraClusterConnectionChecker()),
-        MYSQL_READ_CLUSTER("jdbc:mysql", mysqlReadClusterConnectorName, urlInfo -> new ReadClusterConnectionChecker(urlInfo.queryParameters)),
-        MYSQL_GALERA("jdbc:mysql", galeraClusterConnectorName, urlInfo -> new GaleraClusterConnectionChecker());
+        MARIADB_READ_CLUSTER("jdbc:mariadb", singletonList(mariadbReadClusterConnectorName), urlInfo -> new ReadClusterConnectionChecker(urlInfo.queryParameters)),
+        MARIADB_GALERA("jdbc:mariadb", asList(oldMariadbGaleraClusterConnectorName, mariadbGaleraClusterConnectorName), urlInfo -> new GaleraClusterConnectionChecker()),
+        MYSQL_READ_CLUSTER("jdbc:mysql", singletonList(mysqlReadClusterConnectorName), urlInfo -> new ReadClusterConnectionChecker(urlInfo.queryParameters)),
+        MYSQL_GALERA("jdbc:mysql", asList(oldGaleraClusterConnectorName, galeraClusterConnectorName), urlInfo -> new GaleraClusterConnectionChecker());
 
         private final String driverPrefix;
-        private final String urlPrefix;
+        private final List<String> urlPrefixes;
         private final ConnectionCheckerSupplier connectionCheckerSupplier;
 
         static ConnectionType fromProtocol(String protocol) {
             for(ConnectionType driver : ConnectionType.values()) {
-                if(driver.getUrlPrefix().equals(protocol)) {
+                if(driver.getUrlPrefixes().contains(protocol)) {
                     return driver;
                 }
             }
@@ -80,13 +84,13 @@ public class MysclusconDriver implements Driver {
     private void validateQueryParameters(Map<String, List<String>> queryParameters, String jdbcUrl) {
         if(!queryParameters.containsKey(MYSQL_CONNECT_TIMEOUT_PARAM)) {
             LOGGER.info(() -> "No connect timeout specified for URL: "+jdbcUrl+ " using default: "+DEFAULT_CONNECT_TIMEOUT_IN_MS);
-            queryParameters.put(MYSQL_CONNECT_TIMEOUT_PARAM, Collections.singletonList(DEFAULT_CONNECT_TIMEOUT_IN_MS.toString()));
+            queryParameters.put(MYSQL_CONNECT_TIMEOUT_PARAM, singletonList(DEFAULT_CONNECT_TIMEOUT_IN_MS.toString()));
         }
     }
 
     @Override
     public boolean acceptsURL(String url) throws SQLException {
-        return Stream.of(ConnectionType.values()).map(ConnectionType::getUrlPrefix).anyMatch(url::startsWith);
+        return Stream.of(ConnectionType.values()).flatMap(ct -> ct.getUrlPrefixes().stream()).anyMatch(url::startsWith);
     }
 
     @Override

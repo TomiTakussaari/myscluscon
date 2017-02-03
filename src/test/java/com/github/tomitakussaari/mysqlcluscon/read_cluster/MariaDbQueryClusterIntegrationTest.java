@@ -247,7 +247,7 @@ public class MariaDbQueryClusterIntegrationTest {
     }
 
     private String connectionUrl() {
-        return connectionType.getUrlPrefix()+"://localhost:" + slave1.getPort() + ",localhost:" + slave2.getPort() + "/test";
+        return connectionType.getUrlPrefixes().get(0)+"://localhost:" + slave1.getPort() + ",localhost:" + slave2.getPort() + "/test";
     }
 
     @AfterClass
@@ -286,7 +286,7 @@ public class MariaDbQueryClusterIntegrationTest {
         }
     }
 
-    private static DBConfigurationBuilder createDb(boolean logBin, Integer serverId) throws ManagedProcessException {
+    public static DBConfigurationBuilder createDb(boolean logBin, Integer serverId) throws ManagedProcessException {
         DBConfigurationBuilder configurationBuilder = DBConfigurationBuilder.newBuilder();
         configurationBuilder.setPort(0);
         if (logBin) {
