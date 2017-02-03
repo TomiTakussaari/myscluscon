@@ -19,11 +19,9 @@ JDBC Driver for always connecting to valid server in your Galera or MariaDb/Mysq
 ### Supported schemas
 Use either Mysql or Mariadb scheme, depending on your JDBC driver
 - ```jdbc:myscluscon:mysql:read_cluster``` - for connecting to read only cluster using ```MySQL Connector Java```driver
-- ```jdbc:myscluscon:galera:cluster``` - for connecting to Galera cluster using ```MySQL Connector Java``` driver (DEPRECATED)
 - ```jdbc:myscluscon:mysql:galera``` - for connecting to Galera cluster using ```MySQL Connector Java``` driver
 - ```jdbc:myscluscon:mariadb:read_cluster``` - for connecting to read only cluster using ```MariaDB connector/J``` driver
-- ```jdbc:myscluscon:mariadb:galera:cluster``` - for connecting to Galera cluster using ```MariaDB connector/J``` driver (DEPRECATED)
-- jdbc:myscluscon:mariadb:galera - for connecting to Galera cluster using ```MariaDB connector/J``` driver
+- ```jdbc:myscluscon:mariadb:galera``` - for connecting to Galera cluster using ```MariaDB connector/J``` driver
 
       
 ## Why
