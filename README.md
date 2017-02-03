@@ -18,12 +18,11 @@ JDBC Driver for always connecting to valid server in your Galera or MariaDb/Mysq
 
 ### Supported schemas
 Use either Mysql or Mariadb scheme, depending on your JDBC driver
-- jdbc:myscluscon:mysql:read_cluster - for connecting to read only cluster using ```MySQL Connector Java```driver
-- jdbc:myscluscon:galera:cluster - for connecting to Galera cluster using ```MySQL Connector Java``` driver (DEPRECATED)
-- jdbc:myscluscon:mysql:galera - for connecting to Galera cluster using ```MySQL Connector Java``` driver
-
-- jdbc:myscluscon:mariadb:read_cluster - for connecting to read only cluster using ```MariaDB connector/J``` driver
-- jdbc:myscluscon:mariadb:galera:cluster - for connecting to Galera cluster using ```MariaDB connector/J``` driver (DEPRECATED)
+- ```jdbc:myscluscon:mysql:read_cluster``` - for connecting to read only cluster using ```MySQL Connector Java```driver
+- ```jdbc:myscluscon:galera:cluster``` - for connecting to Galera cluster using ```MySQL Connector Java``` driver (DEPRECATED)
+- ```jdbc:myscluscon:mysql:galera``` - for connecting to Galera cluster using ```MySQL Connector Java``` driver
+- ```jdbc:myscluscon:mariadb:read_cluster``` - for connecting to read only cluster using ```MariaDB connector/J``` driver
+- ```jdbc:myscluscon:mariadb:galera:cluster``` - for connecting to Galera cluster using ```MariaDB connector/J``` driver (DEPRECATED)
 - jdbc:myscluscon:mariadb:galera - for connecting to Galera cluster using ```MariaDB connector/J``` driver
 
       
@@ -41,7 +40,7 @@ Use either Mysql or Mariadb scheme, depending on your JDBC driver
     <dependency>
         <groupId>com.github.tomitakussaari</groupId>
         <artifactId>myscluscon-driver</artifactId>
-        <version>3.0.0</version>
+        <version>3.3.0</version>
     </dependency>
 
 ```
@@ -54,7 +53,7 @@ Use either Mysql or Mariadb scheme, depending on your JDBC driver
     Connection connection = DriverManager.getConnection("jdbc:myscluscon:mysql:read_cluster://serverOne,serverTwo,serverThree:2134/database", "username", "password");
 
     //Connection to any valid server in galera cluster consisting of serverOne, serverTwo or serverThree
-    Connection connection = DriverManager.getConnection("jdbc:myscluscon:galera:cluster://serverOne,serverTwo,serverThree", "username", "password");
+    Connection connection = DriverManager.getConnection("jdbc:myscluscon:mysql:galera://serverOne,serverTwo,serverThree", "username", "password");
 
 ```
 
