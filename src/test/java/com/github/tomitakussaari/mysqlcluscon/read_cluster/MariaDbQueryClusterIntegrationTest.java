@@ -5,15 +5,20 @@ import ch.vorburger.mariadb4j.DB;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
 import com.github.tomitakussaari.mysqlcluscon.ConnectionStatus;
 import com.github.tomitakussaari.mysqlcluscon.MysclusconDriver.ConnectionType;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import javax.activation.DataSource;
+import java.io.Closeable;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
 
@@ -190,6 +195,56 @@ public class MariaDbQueryClusterIntegrationTest {
         }
     }
 
+    @Test
+    public void canOpenConnectionWithHikariCP() throws SQLException {
+        HikariDataSource ds = createAndInitializeHikariDataSource();
+        try(Connection conn = ds.getConnection()) {
+            assertTrue(conn.isValid(10));
+        }
+    }
+
+
+    @Test
+    public void usesValidSlaveWithHikariCP() throws SQLException, InterruptedException {
+        HikariDataSource ds = createAndInitializeHikariDataSource();
+        int connectedToSlaveOne = 0;
+        executeStatement("STOP SLAVE;", slave1Conn);
+        Thread.sleep(1000); //wait a while, because HikariCP does not verify connections everytime getConnection is called
+        List<Connection> connections = new ArrayList<>();
+        for(int i = 0; i< 5; i++) {
+            Connection conn = ds.getConnection();
+            connections.add(conn);
+            String url = conn.getMetaData().getURL();
+            if (url.contains(slave1.getPort() + "")) {
+                connectedToSlaveOne++;
+            }
+        }
+        connections.forEach(MariaDbQueryClusterIntegrationTest::closeSafely);
+        assertEquals("should not have connected to slave one because it was stopped", 0, connectedToSlaveOne);
+    }
+
+    private HikariDataSource createAndInitializeHikariDataSource() throws SQLException {
+        HikariConfig hikariConfig = new HikariConfig();
+        hikariConfig.setJdbcUrl(connectionUrl());
+        hikariConfig.setMaximumPoolSize(5);
+        HikariDataSource ds = new HikariDataSource(hikariConfig);
+        List<Connection> connections = new ArrayList<>();
+        for(int i = 0; i< 5; i++) {
+            connections.add(ds.getConnection());
+        }
+
+        connections.forEach(MariaDbQueryClusterIntegrationTest::closeSafely);
+        return ds;
+    }
+
+
+    private static void closeSafely(AutoCloseable closeable) {
+        try {
+            closeable.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private String connectionUrl() {
         return connectionType.getUrlPrefix()+"://localhost:" + slave1.getPort() + ",localhost:" + slave2.getPort() + "/test";
